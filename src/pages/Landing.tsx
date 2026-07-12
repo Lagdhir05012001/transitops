@@ -1,52 +1,70 @@
 import { useNavigate } from 'react-router-dom';
+import {
+  Truck,
+  Users,
+  Route,
+  Wrench,
+  Fuel,
+  DollarSign,
+  BarChart3,
+  Lock,
+  Zap,
+  Code,
+  Gauge,
+  Workflow,
+  Server,
+  Layers,
+  Database,
+  Key
+} from 'lucide-react';
 
 const GITHUB_URL = 'https://github.com/Lagdhir05012001/transitops';
 
 const features = [
   {
-    icon: '🚚',
+    icon: Truck,
     title: 'Fleet Management',
     desc: 'Centralized registry for all vehicles — track registration, model, capacity, odometer, acquisition cost, and real-time status across your entire fleet.',
     tags: ['Available', 'On Trip', 'In Shop', 'Retired'],
   },
   {
-    icon: '👨‍✈️',
+    icon: Users,
     title: 'Driver Management',
     desc: 'Maintain complete driver profiles with license category, expiry dates, safety scores, and compliance status. Auto-block expired or suspended drivers.',
     tags: ['License Expiry', 'Safety Score', 'RBAC'],
   },
   {
-    icon: '🗺️',
+    icon: Route,
     title: 'Trip Dispatch',
     desc: 'Create and dispatch trips with intelligent validations. Cargo weight checks, driver eligibility, and vehicle availability enforced automatically.',
     tags: ['Draft → Dispatched', 'Auto Status', 'Validation'],
   },
   {
-    icon: '🔧',
+    icon: Wrench,
     title: 'Maintenance Tracking',
     desc: 'Log preventive and corrective maintenance records. Vehicles automatically move to "In Shop" status during maintenance and back on completion.',
     tags: ['Oil Change', 'Brake Repair', 'Engine Service'],
   },
   {
-    icon: '⛽',
+    icon: Fuel,
     title: 'Fuel Management',
     desc: 'Maintain detailed fuel logs per vehicle. Track quantity, cost, date, and odometer readings to monitor fuel efficiency across the fleet.',
     tags: ['Fuel Logs', 'Efficiency', 'Cost Tracking'],
   },
   {
-    icon: '💰',
+    icon: DollarSign,
     title: 'Expense Tracking',
     desc: 'Record and categorize operational expenses — fuel, tolls, repairs, insurance, and miscellaneous. Auto-calculate total operational cost.',
     tags: ['Fuel', 'Toll', 'Insurance', 'Repairs'],
   },
   {
-    icon: '📊',
+    icon: BarChart3,
     title: 'Analytics & Reports',
     desc: 'Generate fleet utilization, fuel efficiency, vehicle ROI, and operational cost reports. Export data to CSV for external analysis.',
     tags: ['Fleet Utilization', 'ROI', 'CSV Export'],
   },
   {
-    icon: '🔐',
+    icon: Lock,
     title: 'Role-Based Access',
     desc: 'JWT authentication with 5 distinct roles — Admin, Fleet Manager, Dispatcher, Safety Officer, and Financial Analyst. Protected routes enforced.',
     tags: ['JWT', 'RBAC', '5 Roles'],
@@ -65,15 +83,16 @@ const businessRules = [
 ];
 
 const techStack = [
-  { label: 'React 18', icon: '⚛️' },
-  { label: 'TypeScript', icon: '🔷' },
-  { label: 'Vite', icon: '⚡' },
-  { label: 'React Router v7', icon: '🔀' },
-  { label: 'Node.js + Express', icon: '🟢' },
-  { label: 'Prisma ORM', icon: '🔺' },
-  { label: 'PostgreSQL', icon: '🐘' },
-  { label: 'JWT Auth', icon: '🔑' },
+  { label: 'React 18', icon: Zap },
+  { label: 'TypeScript', icon: Code },
+  { label: 'Vite', icon: Gauge },
+  { label: 'React Router v7', icon: Workflow },
+  { label: 'Node.js + Express', icon: Server },
+  { label: 'Prisma ORM', icon: Layers },
+  { label: 'PostgreSQL', icon: Database },
+  { label: 'JWT Auth', icon: Key },
 ];
+
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -84,7 +103,7 @@ export default function Landing() {
       <nav className="land-nav">
         <div className="land-nav-inner">
           <div className="land-brand">
-            <span className="land-logo">🚛</span>
+            <Truck className="land-logo-icon" size={24} style={{ color: 'var(--primary)' }} />
             <span className="land-brand-name">TransitOps</span>
           </div>
           <div className="land-nav-links">
@@ -134,10 +153,10 @@ export default function Landing() {
             </a>
           </div>
           <div className="land-hero-stats">
-            <div className="land-stat-pill">🚚 Fleet Management</div>
-            <div className="land-stat-pill">👨‍✈️ Driver Compliance</div>
-            <div className="land-stat-pill">📊 Real-time Analytics</div>
-            <div className="land-stat-pill">🔐 RBAC + JWT</div>
+            <div className="land-stat-pill"><Truck size={16} style={{ marginRight: '6px' }} /> Fleet Management</div>
+            <div className="land-stat-pill"><Users size={16} style={{ marginRight: '6px' }} /> Driver Compliance</div>
+            <div className="land-stat-pill"><BarChart3 size={16} style={{ marginRight: '6px' }} /> Real-time Analytics</div>
+            <div className="land-stat-pill"><Lock size={16} style={{ marginRight: '6px' }} /> RBAC + JWT</div>
           </div>
         </div>
         <div className="land-hero-visual">
@@ -190,16 +209,19 @@ export default function Landing() {
             <p>End-to-end transport operations management in one place — no more spreadsheets or scattered tools.</p>
           </div>
           <div className="land-features-grid">
-            {features.map((f) => (
-              <div className="land-feature-card" key={f.title}>
-                <div className="land-feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-                <div className="land-feature-tags">
-                  {f.tags.map((t) => <span key={t}>{t}</span>)}
+            {features.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div className="land-feature-card" key={f.title}>
+                  <div className="land-feature-icon"><Icon size={24} /></div>
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                  <div className="land-feature-tags">
+                    {f.tags.map((t) => <span key={t}>{t}</span>)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -235,12 +257,15 @@ export default function Landing() {
             <p>Full-stack TypeScript from UI to database — type-safe, maintainable, and scalable.</p>
           </div>
           <div className="land-stack-grid">
-            {techStack.map((t) => (
-              <div className="land-stack-card" key={t.label}>
-                <span className="land-stack-icon">{t.icon}</span>
-                <span className="land-stack-label">{t.label}</span>
-              </div>
-            ))}
+            {techStack.map((t) => {
+              const Icon = t.icon;
+              return (
+                <div className="land-stack-card" key={t.label}>
+                  <span className="land-stack-icon"><Icon size={20} /></span>
+                  <span className="land-stack-label">{t.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -250,8 +275,8 @@ export default function Landing() {
         <div className="land-container">
           <div className="land-section-header">
             <span className="land-section-tag">Quick Start</span>
-            <h2>Get running in 3 steps</h2>
-            <p>Clone, install, and start — the entire platform up in minutes.</p>
+            <h2>Get running in 4 steps</h2>
+            <p>Clone, install dependencies, start the backend, and run the client.</p>
           </div>
           <div className="land-steps">
             <div className="land-step">
@@ -271,10 +296,20 @@ export default function Landing() {
             <div className="land-step">
               <div className="land-step-num">3</div>
               <div className="land-step-content">
-                <h4>Start the dev server</h4>
+                <h4>Start the backend API</h4>
+                <code>npm run backend</code>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#64748b' }}>
+                  Launches SQLite Express API server on <strong>http://localhost:4000</strong>
+                </p>
+              </div>
+            </div>
+            <div className="land-step">
+              <div className="land-step-num">4</div>
+              <div className="land-step-content">
+                <h4>Start the frontend client</h4>
                 <code>npm run dev</code>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#64748b' }}>
-                  Opens at <strong>http://localhost:3000</strong> · Login with <strong>admin / password</strong>
+                  Opens Vite dev server at <strong>http://localhost:3000</strong> · Login with <strong>admin@transitops.com / password</strong>
                 </p>
               </div>
             </div>
@@ -310,7 +345,7 @@ export default function Landing() {
         <div className="land-container">
           <div className="land-footer-inner">
             <div className="land-brand">
-              <span className="land-logo">🚛</span>
+              <Truck className="land-logo-icon" size={24} style={{ color: 'var(--primary)' }} />
               <span className="land-brand-name">TransitOps</span>
             </div>
             <p className="land-footer-tagline">Smart Transport Operations Platform · Open Source · MIT License</p>

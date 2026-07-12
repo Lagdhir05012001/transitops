@@ -1,0 +1,228 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@transitops.com",
+      "passwordHash": "$2a$08$YxYIT8b.WJHnPFwmmDUvVeo/56fWG7ouDfid54GSi0nB0HuT2ye.S",
+      "roles": "Admin",
+      "createdAt": "2026-07-12T05:48:49.320Z"
+    },
+    {
+      "id": 2,
+      "name": "Fleet Manager",
+      "email": "fleet@transitops.com",
+      "passwordHash": "$2a$08$bNo3Lx6QUuBgdz8i3e82PeO6dqsH40jDNGga78M8xh/79unkBMbBa",
+      "roles": "Fleet Manager",
+      "createdAt": "2026-07-12T05:48:49.339Z"
+    },
+    {
+      "id": 3,
+      "name": "Dispatcher User",
+      "email": "dispatch@transitops.com",
+      "passwordHash": "$2a$08$sQ5YfhlE.hEYUuhKMZxO8ufTSOeJG8eZOgx14UFOcVLNqF3hWtZTa",
+      "roles": "Dispatcher",
+      "createdAt": "2026-07-12T05:48:49.357Z"
+    },
+    {
+      "id": 4,
+      "name": "Safety Officer",
+      "email": "safety@transitops.com",
+      "passwordHash": "$2a$08$69DIkvssY1R4JAwxBw2iOOlTRyRdmWTpvi8q2Yk667oJ94OWrACWe",
+      "roles": "Safety Officer",
+      "createdAt": "2026-07-12T05:48:49.376Z"
+    },
+    {
+      "id": 5,
+      "name": "Financial Analyst",
+      "email": "finance@transitops.com",
+      "passwordHash": "$2a$08$GFQ9F7k2NW2YlV.DUXtkheUuo.V8TJQVtFwNDodeGBA.n.Mbpd/Wq",
+      "roles": "Financial Analyst",
+      "createdAt": "2026-07-12T05:48:49.395Z"
+    }
+  ],
+  "vehicles": [
+    {
+      "id": 1,
+      "registration": "Van-05",
+      "name": "City Van",
+      "model": "Sprinter 315",
+      "type": "Van",
+      "capacity": 500,
+      "odometer": 12000,
+      "cost": 45000,
+      "status": "Available"
+    },
+    {
+      "id": 2,
+      "registration": "Bus-12",
+      "name": "Metro Bus",
+      "model": "Aero 160",
+      "type": "Bus",
+      "capacity": 1200,
+      "odometer": 35000,
+      "cost": 98000,
+      "status": "Available"
+    },
+    {
+      "id": 3,
+      "registration": "Truck-07",
+      "name": "Cargo Truck",
+      "model": "Pro 700T",
+      "type": "Truck",
+      "capacity": 1500,
+      "odometer": 28000,
+      "cost": 112000,
+      "status": "In Shop"
+    },
+    {
+      "id": 4,
+      "registration": "Van-09",
+      "name": "Express Van",
+      "model": "Transit L3",
+      "type": "Van",
+      "capacity": 600,
+      "odometer": 8400,
+      "cost": 52000,
+      "status": "Available"
+    }
+  ],
+  "drivers": [
+    {
+      "id": 1,
+      "name": "Alex Carter",
+      "licenseNumber": "DL-1001",
+      "licenseCategory": "B",
+      "licenseExpiry": "2027-08-10",
+      "contact": "+1 555 0101",
+      "safetyScore": 92,
+      "status": "Available"
+    },
+    {
+      "id": 2,
+      "name": "Mina Patel",
+      "licenseNumber": "DL-2002",
+      "licenseCategory": "C",
+      "licenseExpiry": "2026-10-01",
+      "contact": "+1 555 0102",
+      "safetyScore": 88,
+      "status": "Available"
+    },
+    {
+      "id": 3,
+      "name": "Jordan Lee",
+      "licenseNumber": "DL-3003",
+      "licenseCategory": "B",
+      "licenseExpiry": "2025-03-15",
+      "contact": "+1 555 0103",
+      "safetyScore": 74,
+      "status": "Off Duty"
+    },
+    {
+      "id": 4,
+      "name": "Sam Rivera",
+      "licenseNumber": "DL-4004",
+      "licenseCategory": "C",
+      "licenseExpiry": "2027-12-20",
+      "contact": "+1 555 0104",
+      "safetyScore": 95,
+      "status": "Available"
+    }
+  ],
+  "trips": [
+    {
+      "id": 1,
+      "source": "Depot A",
+      "destination": "North Hub",
+      "vehicleId": 1,
+      "driverId": 1,
+      "cargoWeight": 450,
+      "distance": 140,
+      "status": "Completed",
+      "fuelUsed": 18
+    },
+    {
+      "id": 2,
+      "source": "Depot B",
+      "destination": "South Port",
+      "vehicleId": 2,
+      "driverId": 2,
+      "cargoWeight": 800,
+      "distance": 220,
+      "status": "Draft",
+      "fuelUsed": 0
+    }
+  ],
+  "maintenance": [
+    {
+      "id": 1,
+      "vehicleId": 3,
+      "type": "Oil Change",
+      "description": "Routine 10k service",
+      "cost": 180,
+      "date": "2026-07-10",
+      "status": "Open"
+    },
+    {
+      "id": 2,
+      "vehicleId": 1,
+      "type": "Tire Rotation",
+      "description": "Front–rear rotation",
+      "cost": 80,
+      "date": "2026-06-20",
+      "status": "Closed"
+    }
+  ],
+  "fuel_logs": [
+    {
+      "id": 1,
+      "vehicleId": 1,
+      "liters": 50,
+      "cost": 85,
+      "date": "2026-07-01",
+      "odometer": 11800
+    },
+    {
+      "id": 2,
+      "vehicleId": 2,
+      "liters": 90,
+      "cost": 153,
+      "date": "2026-07-03",
+      "odometer": 34800
+    },
+    {
+      "id": 3,
+      "vehicleId": 4,
+      "liters": 40,
+      "cost": 68,
+      "date": "2026-07-08",
+      "odometer": 8200
+    }
+  ],
+  "expenses": [
+    {
+      "id": 1,
+      "vehicleId": 1,
+      "type": "Toll",
+      "amount": 12,
+      "date": "2026-07-01",
+      "notes": "Highway toll Depot A→North Hub"
+    },
+    {
+      "id": 2,
+      "vehicleId": 2,
+      "type": "Insurance",
+      "amount": 420,
+      "date": "2026-07-01",
+      "notes": "Monthly premium"
+    },
+    {
+      "id": 3,
+      "vehicleId": 3,
+      "type": "Repairs",
+      "amount": 380,
+      "date": "2026-07-10",
+      "notes": "Brake pad replacement"
+    }
+  ]
+}
