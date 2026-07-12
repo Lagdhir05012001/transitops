@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { Player } from '@remotion/player';
+import { TransitOpsVideo } from '../components/TransitOpsVideo';
 import {
   Truck,
   Users,
@@ -17,6 +19,7 @@ import {
   Database,
   Key
 } from 'lucide-react';
+
 
 const GITHUB_URL = 'https://github.com/Lagdhir05012001/transitops';
 
@@ -222,6 +225,33 @@ export default function Landing() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── VIDEO WALKTHROUGH ──────────────────── */}
+      <section className="land-section land-video-section" id="video" style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <div className="land-container" style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
+          <div className="land-section-header" style={{ marginBottom: '2rem' }}>
+            <span className="land-section-tag">Interactive Walkthrough</span>
+            <h2>Watch TransitOps in Action</h2>
+            <p>A programmatic React-animated walkthrough built using Remotion.</p>
+          </div>
+          <div className="landing-video-wrapper" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', background: '#000', lineHeight: 0 }}>
+            <Player
+              component={TransitOpsVideo}
+              durationInFrames={480}
+              fps={30}
+              compositionWidth={1920}
+              compositionHeight={1080}
+              style={{
+                width: '100%',
+                aspectRatio: '16/9',
+              }}
+              controls
+              loop
+              autoPlay
+            />
           </div>
         </div>
       </section>
