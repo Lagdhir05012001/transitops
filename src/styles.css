@@ -1,0 +1,45 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e2e8f0;
+  background: #07111f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: linear-gradient(135deg, #07111f 0%, #10233a 100%); min-height: 100vh; }
+button, select { font: inherit; }
+button { cursor: pointer; border: 0; border-radius: 999px; padding: 0.7rem 1rem; }
+.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.25rem; color: #7dd3fc; font-size: 0.75rem; margin: 0 0 0.25rem; }
+h1, h2, h3, h4, p { margin-top: 0; }
+.topbar-actions, .filters, .card-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.primary { background: linear-gradient(90deg, #38bdf8, #6366f1); color: white; }
+.ghost { background: rgba(255,255,255,0.08); color: #f8fafc; }
+.dashboard-grid { display: grid; gap: 1.25rem; }
+.hero-card, .panel, .stat-card { background: rgba(8, 15, 29, 0.8); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 24px; box-shadow: 0 20px 60px rgba(2, 8, 23, 0.35); backdrop-filter: blur(18px); }
+.hero-card { display: flex; justify-content: space-between; gap: 1rem; padding: 1.5rem; align-items: center; }
+.hero-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.hero-badges span { padding: 0.5rem 0.8rem; border-radius: 999px; background: rgba(125, 211, 252, 0.15); color: #bae6fd; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.stat-card { padding: 1rem 1.2rem; }
+.stat-card strong { display: block; font-size: 1.6rem; margin: 0.4rem 0; }
+.panel { padding: 1.2rem 1.3rem; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.8rem 0.5rem; border-bottom: 1px solid rgba(148, 163, 184, 0.15); }
+.rows { display: grid; gap: 0.8rem; }
+.card { display: flex; justify-content: space-between; gap: 1rem; padding: 0.95rem 1rem; border-radius: 16px; background: rgba(255,255,255,0.04); }
+.pill { padding: 0.35rem 0.6rem; border-radius: 999px; font-size: 0.8rem; background: rgba(248,250,252,0.1); color: #f8fafc; }
+.pill.available, .pill.completed, .pill.closed { background: rgba(34,197,94,0.18); color: #bbf7d0; }
+.pill.on-trip, .pill.dispatched, .pill.open { background: rgba(250,204,21,0.2); color: #fde68a; }
+.pill.in-shop, .pill.suspended, .pill.cancelled { background: rgba(248,113,113,0.2); color: #fecaca; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr 1fr; } .hero-card, .topbar, .panel-header, .card { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } .app-shell { padding: 1rem; } }
