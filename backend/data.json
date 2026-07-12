@@ -283,7 +283,7 @@
       "description": "Routine 10k service",
       "cost": 180,
       "date": "2026-07-10",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 2,
@@ -301,7 +301,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 4,
@@ -310,7 +310,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 5,
@@ -319,7 +319,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 6,
@@ -328,7 +328,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 7,
@@ -337,7 +337,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 8,
@@ -346,7 +346,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 9,
@@ -355,7 +355,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 10,
@@ -364,7 +364,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 11,
@@ -373,7 +373,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 12,
@@ -382,7 +382,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 13,
@@ -391,7 +391,7 @@
       "description": "chage oil ",
       "cost": 500,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 14,
@@ -400,7 +400,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 15,
@@ -409,7 +409,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 16,
@@ -418,7 +418,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 17,
@@ -427,7 +427,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 18,
@@ -436,7 +436,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 19,
@@ -445,7 +445,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 20,
@@ -454,7 +454,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 21,
@@ -463,7 +463,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 22,
@@ -472,7 +472,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 23,
@@ -481,7 +481,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 24,
@@ -490,7 +490,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 25,
@@ -499,7 +499,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 26,
@@ -508,7 +508,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 27,
@@ -517,7 +517,7 @@
       "description": "Manual maintenance entry",
       "cost": 0,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 28,
@@ -526,7 +526,7 @@
       "description": "5",
       "cost": 1,
       "date": "2026-07-12",
-      "status": "Open"
+      "status": "Closed"
     },
     {
       "id": 29,
