@@ -1,6 +1,20 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid
+} from 'recharts';
 import {
   LayoutDashboard,
   Truck,
@@ -11,7 +25,11 @@ import {
   DollarSign,
   TrendingUp,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  Sun,
+  Moon,
+  ArrowLeft,
+  Upload
 } from 'lucide-react';
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
@@ -107,6 +125,18 @@ export default function Dashboard() {
   const [filterType, setFilterType] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterRegion, setFilterRegion] = useState('All');
+
+  // Dark/Light Theme State
+  const [theme, setTheme] = useState(() => localStorage.getItem('transitops_theme') || 'light');
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('transitops_theme', theme);
+  }, [theme]);
 
   const [kpisState, setKpisState] = useState<any>({
     totalV: 0,
@@ -350,6 +380,18 @@ export default function Dashboard() {
             );
           })}
         </nav>
+
+        {/* Theme Toggle Button */}
+        <div style={{ padding: '0 1rem', marginBottom: '0.5rem' }}>
+          <button
+            className="theme-toggle-btn"
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          >
+            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+          </button>
+        </div>
+
         <div className="db-sidebar-user">
           <div className="db-sidebar-avatar">{user.name?.charAt(0) || 'U'}</div>
           <div className="db-sidebar-user-info">
@@ -402,7 +444,18 @@ export default function Dashboard() {
                   setFilterRegion={setFilterRegion}
                 />
               )}
-              {section === 'vehicles' && <VehiclesView vehicles={vehicles} reloadData={fetchData} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'vehicles' && (
+                <VehiclesView
+                  vehicles={vehicles}
+                  reloadData={fetchData}
+                  isAuthorized={isAuthorized}
+                  showAlert={showAlert}
+                  trips={trips}
+                  maintenances={maintenances}
+                  expenses={expenses}
+                  fuelLogs={fuelLogs}
+                />
+              )}
               {section === 'drivers' && <DriversView drivers={drivers} reloadData={fetchData} isAuthorized={isAuthorized} showAlert={showAlert} />}
               {section === 'trips' && <TripsView trips={trips} reloadData={fetchData} vehicles={vehicles} drivers={drivers} dispatchTrip={dispatchTrip} completeTrip={completeTrip} cancelTrip={cancelTrip} isAuthorized={isAuthorized} showAlert={showAlert} />}
               {section === 'maintenance' && <MaintenanceView maintenances={maintenances} reloadData={fetchData} vehicles={vehicles} closeMaintenance={closeMaintenance} isAuthorized={isAuthorized} showAlert={showAlert} />}
@@ -653,13 +706,258 @@ function DashboardView({
   );
 }
 
-function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
+// ── Vehicle Detailed Sub-page with Document Management ──
+function VehicleDetailView({
+  vehicle,
+  onBack,
+  trips,
+  maintenances,
+  expenses,
+  fuelLogs,
+  showAlert
+}: any) {
+  // Document state (persisted in localStorage)
+  const [docs, setDocs] = useState<any[]>(() => {
+    const local = localStorage.getItem('transitops_vehicle_docs');
+    if (local) {
+      const parsed = JSON.parse(local);
+      return parsed[vehicle.id] || [
+        { type: 'Registration Certificate', status: 'Valid', expiry: '2028-12-31', fileName: 'registration_cert.pdf' },
+        { type: 'Insurance Policy', status: 'Valid', expiry: '2027-06-30', fileName: 'insurance_policy.pdf' }
+      ];
+    }
+    return [
+      { type: 'Registration Certificate', status: 'Valid', expiry: '2028-12-31', fileName: 'registration_cert.pdf' },
+      { type: 'Insurance Policy', status: 'Valid', expiry: '2027-06-30', fileName: 'insurance_policy.pdf' }
+    ];
+  });
+
+  const [newDoc, setNewDoc] = useState({ type: 'Registration Certificate', expiry: '', file: '' });
+
+  const saveDocs = (newDocs: any[]) => {
+    setDocs(newDocs);
+    const local = localStorage.getItem('transitops_vehicle_docs');
+    const parsed = local ? JSON.parse(local) : {};
+    parsed[vehicle.id] = newDocs;
+    localStorage.setItem('transitops_vehicle_docs', JSON.stringify(parsed));
+  };
+
+  const handleUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDoc.expiry) {
+      showAlert('Please provide an expiry date.');
+      return;
+    }
+    const days = Math.floor((new Date(newDoc.expiry).getTime() - Date.now()) / 86400000);
+    const status = days < 0 ? 'Expired' : days <= 90 ? 'Expiring' : 'Valid';
+    const docEntry = {
+      type: newDoc.type,
+      status,
+      expiry: newDoc.expiry,
+      fileName: newDoc.file ? newDoc.file.split('\\').pop() : 'uploaded_document.pdf'
+    };
+    saveDocs([...docs, docEntry]);
+    setNewDoc({ type: 'Registration Certificate', expiry: '', file: '' });
+    showAlert('Document successfully uploaded and saved.');
+  };
+
+  const deleteDoc = (index: number) => {
+    const list = [...docs];
+    list.splice(index, 1);
+    saveDocs(list);
+  };
+
+  const vehicleTrips = trips.filter((t: Trip) => t.vehicleId === vehicle.id);
+  const vehicleMaint = maintenances.filter((m: Maintenance) => m.vehicleId === vehicle.id);
+  const vehicleExpenses = expenses.filter((e: Expense) => e.vehicleId === vehicle.id);
+  const vehicleFuel = fuelLogs.filter((f: FuelLog) => f.vehicleId === vehicle.id);
+  const totalLiters = vehicleFuel.reduce((s: number, f: FuelLog) => s + f.liters, 0);
+  const totalFuelCost = vehicleFuel.reduce((s: number, f: FuelLog) => s + f.cost, 0);
+
+  return (
+    <div className="db-section">
+      <div className="db-section-header" style={{ marginBottom: '1.25rem' }}>
+        <button className="ghost" onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ArrowLeft size={16} /> Back to Registry
+        </button>
+        <h2>Vehicle Profile: {vehicle.registration}</h2>
+      </div>
+
+      <div className="db-detail-grid">
+        {/* Specifications Panel */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div className="panel">
+            <div className="panel-header"><h3>📋 Technical Details</h3></div>
+            <div className="db-spec-card">
+              <div className="db-spec-item"><span className="db-spec-label">Registration</span><span className="db-spec-value">{vehicle.registration}</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Model</span><span className="db-spec-value">{vehicle.name} ({vehicle.model})</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Type</span><span className="db-spec-value">{vehicle.type}</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Region</span><span className="db-spec-value">{vehicle.region || 'North'}</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Odometer</span><span className="db-spec-value">{fmtNum(vehicle.odometer)} km</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Max Load</span><span className="db-spec-value">{fmtNum(vehicle.capacity)} kg</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Acq. Cost</span><span className="db-spec-value">{fmtCurrency(vehicle.cost)}</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Fuel Spends</span><span className="db-spec-value">{totalLiters} L ({fmtCurrency(totalFuelCost)})</span></div>
+              <div className="db-spec-item"><span className="db-spec-label">Status</span><Pill status={vehicle.status} /></div>
+            </div>
+          </div>
+
+          {/* Document Management Card */}
+          <div className="panel">
+            <div className="panel-header"><h3>📂 Document Management</h3></div>
+            <div className="doc-card-list">
+              {docs.map((doc: any, idx: number) => (
+                <div className="doc-card" key={idx}>
+                  <h4>{doc.type}</h4>
+                  <p>Expiry: {doc.expiry}</p>
+                  <Pill status={doc.status} />
+                  <div style={{ marginTop: '0.8rem', fontSize: '0.8rem', color: '#64748b' }}>
+                    📄 {doc.fileName}
+                  </div>
+                  <button
+                    className="db-action-btn danger"
+                    style={{ position: 'absolute', top: '10px', right: '10px', padding: '0.1rem 0.35rem' }}
+                    onClick={() => deleteDoc(idx)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <form onSubmit={handleUpload} className="doc-upload-box">
+              <h4 style={{ margin: '0 0 0.6rem', fontSize: '0.85rem' }}>Upload New Document</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  <select
+                    style={{ flex: 1, padding: '0.35rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+                    value={newDoc.type}
+                    onChange={e => setNewDoc({ ...newDoc, type: e.target.value })}
+                  >
+                    <option>Registration Certificate</option>
+                    <option>Insurance Policy</option>
+                    <option>Safety Certificate</option>
+                    <option>Pollution Certificate</option>
+                  </select>
+                  <input
+                    type="date"
+                    style={{ flex: 1, padding: '0.35rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+                    value={newDoc.expiry}
+                    onChange={e => setNewDoc({ ...newDoc, expiry: e.target.value })}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <input
+                    type="file"
+                    style={{ flex: 1, fontSize: '0.8rem' }}
+                    value={newDoc.file}
+                    onChange={e => setNewDoc({ ...newDoc, file: e.target.value })}
+                  />
+                  <button type="submit" className="primary" style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}>
+                    <Upload size={12} style={{ marginRight: '4px' }} /> Upload
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* History and Logs Panel */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Maintenance History */}
+          <div className="panel">
+            <div className="panel-header"><h3>🔧 Maintenance Logs</h3></div>
+            {vehicleMaint.length === 0 ? (
+              <p className="db-empty">No maintenance entries for this vehicle.</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Cost</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {vehicleMaint.map((m: Maintenance) => (
+                      <tr key={m.id}>
+                        <td>{m.date}</td>
+                        <td><strong>{m.type}</strong></td>
+                        <td>{m.description}</td>
+                        <td>{fmtCurrency(m.cost)}</td>
+                        <td><Pill status={m.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Trips History */}
+          <div className="panel">
+            <div className="panel-header"><h3>🚀 Trip History</h3></div>
+            {vehicleTrips.length === 0 ? (
+              <p className="db-empty">No trips registered for this vehicle.</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Route</th><th>Cargo Weight</th><th>Distance</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {vehicleTrips.map((t: Trip) => (
+                      <tr key={t.id}>
+                        <td><strong>{t.source} → {t.destination}</strong></td>
+                        <td>{t.cargoWeight} kg</td>
+                        <td>{t.distance} km</td>
+                        <td><Pill status={t.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Financial Expenses */}
+          <div className="panel">
+            <div className="panel-header"><h3>💰 Operational Expenses</h3></div>
+            {vehicleExpenses.length === 0 ? (
+              <p className="db-empty">No expenses logged for this vehicle.</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Notes</th></tr></thead>
+                  <tbody>
+                    {vehicleExpenses.map((e: Expense) => (
+                      <tr key={e.id}>
+                        <td>{e.date}</td>
+                        <td><span className="pill">{e.type}</span></td>
+                        <td><span className="cost-badge">{fmtCurrency(e.amount)}</span></td>
+                        <td>{e.notes}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VehiclesView({
+  vehicles,
+  reloadData,
+  isAuthorized,
+  showAlert,
+  trips,
+  maintenances,
+  expenses,
+  fuelLogs
+}: any) {
   const [filter, setFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '', region: 'North' });
   const [formErr, setFormErr] = useState('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
 
   const filtered = useMemo(() => vehicles.filter((v: Vehicle) => {
     const statusOk = filter === 'All' || v.status === filter;
@@ -718,6 +1016,25 @@ function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
     }
   };
 
+  if (selectedVehicleId !== null) {
+    const vehicle = vehicles.find((v: Vehicle) => v.id === selectedVehicleId);
+    if (!vehicle) {
+      setSelectedVehicleId(null);
+      return null;
+    }
+    return (
+      <VehicleDetailView
+        vehicle={vehicle}
+        onBack={() => setSelectedVehicleId(null)}
+        trips={trips}
+        maintenances={maintenances}
+        expenses={expenses}
+        fuelLogs={fuelLogs}
+        showAlert={showAlert}
+      />
+    );
+  }
+
   return (
     <div className="db-section">
       <div className="db-section-header">
@@ -771,6 +1088,7 @@ function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
                   <td><Pill status={v.status} /></td>
                   <td>
                     <div className="db-row-actions">
+                      <button className="db-action-btn" onClick={() => setSelectedVehicleId(v.id)}>View Details</button>
                       {v.status === 'Available' && <button className="db-action-btn warn" onClick={() => sendToShop(v.id)}>Maintenance</button>}
                       {v.status !== 'Retired' && v.status !== 'On Trip' && <button className="db-action-btn danger" onClick={() => retireVehicle(v.id)}>Retire</button>}
                     </div>
@@ -1360,11 +1678,93 @@ function ReportsView({ vehicles, trips, fuelLogs, maintenances, expenses }: any)
     const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'transitops-report.csv'; a.click();
   };
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('TransitOps – Smart Transport Operations Platform', 15, 20);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.text('Fleet Operational Cost & ROI Analysis Report', 15, 28);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 15, 34);
+    doc.line(15, 38, 195, 38);
+
+    // Summary Section
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('1. Operational Costs Summary', 15, 46);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Fuel Cost: $${totalFuelCost.toLocaleString()}`, 15, 53);
+    doc.text(`Maintenance Cost: $${totalMaintCost.toLocaleString()}`, 15, 60);
+    doc.text(`Other Expenses (Tolls, Ins): $${totalExpenses.toLocaleString()}`, 15, 67);
+    doc.text(`Total Operational Cost: $${totalOpCost.toLocaleString()}`, 15, 74);
+    
+    doc.text(`Fleet Utilization: ${fleetUtil}%`, 110, 53);
+    doc.text(`Completed Trips: ${trips.filter((t: Trip) => t.status === 'Completed').length}`, 110, 60);
+    doc.text(`Total Trip Distance: ${totalDistanceByTrip.toLocaleString()} km`, 110, 67);
+    doc.text(`Fuel Efficiency: ${fuelEfficiency} km/L`, 110, 74);
+
+    doc.line(15, 80, 195, 80);
+
+    // Table Section
+    doc.setFont('helvetica', 'bold');
+    doc.text('2. Vehicle Return on Investment (ROI) Details', 15, 88);
+    
+    doc.setFontSize(9);
+    // Draw table header
+    doc.setFillColor(37, 99, 235);
+    doc.rect(15, 93, 180, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Registration', 17, 98);
+    doc.text('Revenue (est.)', 50, 98);
+    doc.text('Fuel Spend', 85, 98);
+    doc.text('Maint. Spend', 120, 98);
+    doc.text('Acq. Cost', 150, 98);
+    doc.text('ROI %', 175, 98);
+    
+    doc.setTextColor(0, 0, 0);
+    let y = 105;
+    vehicleROI.forEach((v: any, index: number) => {
+      if (index % 2 === 1) {
+        doc.setFillColor(240, 243, 248);
+        doc.rect(15, y - 4, 180, 6, 'F');
+      }
+      doc.text(v.registration, 17, y);
+      doc.text(`$${v.vRevenue.toLocaleString()}`, 50, y);
+      doc.text(`$${v.vFuel.toLocaleString()}`, 85, y);
+      doc.text(`$${v.vMaint.toLocaleString()}`, 120, y);
+      doc.text(`$${v.cost.toLocaleString()}`, 150, y);
+      doc.text(`${v.roi}%`, 175, y);
+      doc.line(15, y + 2, 195, y + 2);
+      y += 8;
+    });
+
+    doc.save('transitops-operational-report.pdf');
+  };
+
+  const costChartData = [
+    { name: 'Fuel Spend', value: totalFuelCost, color: '#3b82f6' },
+    { name: 'Maintenance', value: totalMaintCost, color: '#f59e0b' },
+    { name: 'Other Expenses', value: totalExpenses, color: '#8b5cf6' }
+  ];
+
+  const roiChartData = vehicleROI.map((v: any) => ({
+    name: v.registration,
+    'ROI %': parseFloat(v.roi),
+    'Est. Revenue': v.vRevenue,
+    'Op. Cost': v.vFuel + v.vMaint
+  }));
+
   return (
     <div className="db-section">
       <div className="db-section-header">
         <div />
-        <button className="primary" onClick={exportCSV}>⬇ Export Full Report (CSV)</button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="ghost" onClick={exportCSV}>⬇ Export CSV</button>
+          <button className="primary" onClick={exportPDF}>⬇ Export Report (PDF)</button>
+        </div>
       </div>
 
       <div className="db-kpi-grid" style={{ marginBottom: '1.5rem' }}>
@@ -1378,8 +1778,55 @@ function ReportsView({ vehicles, trips, fuelLogs, maintenances, expenses }: any)
         <StatCard label="Total Distance" value={`${fmtNum(totalDistanceByTrip)} km`} sub="completed trip distance" accent="#475569" />
       </div>
 
+      {/* Recharts Graphical Analysis */}
+      <div className="db-charts-row">
+        <div className="db-chart-card">
+          <h3>Cost Breakdown ($)</h3>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={costChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {costChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => value !== undefined && value !== null ? '$' + (+value).toLocaleString() : ''} />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="db-chart-card">
+          <h3>Vehicle Return on Investment (%)</h3>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <BarChart data={roiChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="name" stroke="var(--text-secondary)" />
+                <YAxis stroke="var(--text-secondary)" />
+                <Tooltip formatter={(value, name) => [value !== undefined && value !== null ? (name === 'ROI %' ? `${value}%` : `$${(+value).toLocaleString()}`) : '', name]} />
+                <Bar dataKey="ROI %" fill="#10b981">
+                  {roiChartData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry['ROI %'] >= 0 ? '#10b981' : '#ef4444'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       <div className="panel" style={{ marginBottom: '1.5rem' }}>
-        <div className="panel-header"><h3>Cost Breakdown</h3></div>
+        <div className="panel-header"><h3>Cost Breakdown (Relative Proportion)</h3></div>
         <div className="db-util-bars">
           {[
             { label: 'Fuel', amount: totalFuelCost, color: '#2563eb' },
