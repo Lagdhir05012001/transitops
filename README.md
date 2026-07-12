@@ -1,3 +1,13 @@
+# TransitOps Frontend
+
+This workspace now contains a responsive React + Vite frontend prototype for TransitOps, including a fleet dashboard, dispatch board, maintenance view, and driver compliance cards.
+
+## Quick start
+
+- Install dependencies with npm install
+- Start the app with npm run dev
+- Open the local URL shown by Vite, typically http://localhost:3000
+
 # 🚛 TransitOps – Smart Transport Operations Platform
 
 > **Enterprise-grade Fleet & Transport Management System**  
