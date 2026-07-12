@@ -1,5 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import {
+  LayoutDashboard,
+  Truck,
+  Users,
+  Route,
+  Wrench,
+  Fuel,
+  DollarSign,
+  TrendingUp,
+  LogOut,
+  AlertTriangle
+} from 'lucide-react';
+
+const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+
 
 // ── Types ────────────────────────────────────────────────────────
 type VehicleStatus = 'Available' | 'On Trip' | 'In Shop' | 'Retired';
@@ -31,39 +47,6 @@ interface Expense {
   id: number; vehicleId: number; type: string; amount: number; date: string; notes: string;
 }
 
-// ── Seed Data ────────────────────────────────────────────────────
-const seedVehicles: Vehicle[] = [
-  { id: 1, registration: 'Van-05', name: 'City Van', model: 'Sprinter 315', type: 'Van', capacity: 500, odometer: 12000, cost: 45000, status: 'Available' },
-  { id: 2, registration: 'Bus-12', name: 'Metro Bus', model: 'Aero 160', type: 'Bus', capacity: 1200, odometer: 35000, cost: 98000, status: 'Available' },
-  { id: 3, registration: 'Truck-07', name: 'Cargo Truck', model: 'Pro 700T', type: 'Truck', capacity: 1500, odometer: 28000, cost: 112000, status: 'In Shop' },
-  { id: 4, registration: 'Van-09', name: 'Express Van', model: 'Transit L3', type: 'Van', capacity: 600, odometer: 8400, cost: 52000, status: 'Available' },
-];
-const seedDrivers: Driver[] = [
-  { id: 1, name: 'Alex Carter', licenseNumber: 'DL-1001', licenseCategory: 'B', licenseExpiry: '2027-08-10', contact: '+1 555 0101', safetyScore: 92, status: 'Available' },
-  { id: 2, name: 'Mina Patel', licenseNumber: 'DL-2002', licenseCategory: 'C', licenseExpiry: '2026-10-01', contact: '+1 555 0102', safetyScore: 88, status: 'Available' },
-  { id: 3, name: 'Jordan Lee', licenseNumber: 'DL-3003', licenseCategory: 'B', licenseExpiry: '2025-03-15', contact: '+1 555 0103', safetyScore: 74, status: 'Off Duty' },
-  { id: 4, name: 'Sam Rivera', licenseNumber: 'DL-4004', licenseCategory: 'C', licenseExpiry: '2027-12-20', contact: '+1 555 0104', safetyScore: 95, status: 'Available' },
-];
-const seedTrips: Trip[] = [
-  { id: 1, source: 'Depot A', destination: 'North Hub', vehicleId: 1, driverId: 1, cargoWeight: 450, distance: 140, status: 'Completed', fuelUsed: 18 },
-  { id: 2, source: 'Depot B', destination: 'South Port', vehicleId: 2, driverId: 2, cargoWeight: 800, distance: 220, status: 'Draft', fuelUsed: 0 },
-];
-const seedMaintenances: Maintenance[] = [
-  { id: 1, vehicleId: 3, type: 'Oil Change', description: 'Routine 10k service', cost: 180, date: '2026-07-10', status: 'Open' },
-  { id: 2, vehicleId: 1, type: 'Tire Rotation', description: 'Front–rear rotation', cost: 80, date: '2026-06-20', status: 'Closed' },
-];
-const seedFuelLogs: FuelLog[] = [
-  { id: 1, vehicleId: 1, liters: 50, cost: 85, date: '2026-07-01', odometer: 11800 },
-  { id: 2, vehicleId: 2, liters: 90, cost: 153, date: '2026-07-03', odometer: 34800 },
-  { id: 3, vehicleId: 4, liters: 40, cost: 68, date: '2026-07-08', odometer: 8200 },
-];
-const seedExpenses: Expense[] = [
-  { id: 1, vehicleId: 1, type: 'Toll', amount: 12, date: '2026-07-01', notes: 'Highway toll Depot A→North Hub' },
-  { id: 2, vehicleId: 2, type: 'Insurance', amount: 420, date: '2026-07-01', notes: 'Monthly premium' },
-  { id: 3, vehicleId: 3, type: 'Repairs', amount: 380, date: '2026-07-10', notes: 'Brake pad replacement' },
-];
-
-// ── Utility Helpers ──────────────────────────────────────────────
 const today = new Date().toISOString().slice(0, 10);
 const isExpired = (d: string) => new Date(d) < new Date();
 const fmtCurrency = (n: number) => `$${n.toLocaleString()}`;
@@ -88,13 +71,15 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string 
   );
 }
 
-// ── Confirm Modal ─────────────────────────────────────────────────
+// ── Alert Modal ───────────────────────────────────────────────────
 function Alert({ msg, onClose }: { msg: string; onClose: () => void }) {
   if (!msg) return null;
   return (
     <div className="db-alert-overlay" onClick={onClose}>
       <div className="db-alert-box" onClick={e => e.stopPropagation()}>
-        <div className="db-alert-icon">⚠️</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+          <AlertTriangle size={36} style={{ color: '#d97706' }} />
+        </div>
         <p>{msg}</p>
         <button className="primary" onClick={onClose}>Got it</button>
       </div>
@@ -109,86 +94,227 @@ export default function Dashboard() {
   const user = userRaw ? JSON.parse(userRaw) : { name: 'Admin', role: 'Admin' };
 
   const [section, setSection] = useState<Section>('dashboard');
-  const [vehicles, setVehicles] = useState<Vehicle[]>(seedVehicles);
-  const [drivers, setDrivers] = useState<Driver[]>(seedDrivers);
-  const [trips, setTrips] = useState<Trip[]>(seedTrips);
-  const [maintenances, setMaintenances] = useState<Maintenance[]>(seedMaintenances);
-  const [fuelLogs, setFuelLogs] = useState<FuelLog[]>(seedFuelLogs);
-  const [expenses, setExpenses] = useState<Expense[]>(seedExpenses);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [alert, setAlert] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [kpisState, setKpisState] = useState<any>({
+    totalV: 0,
+    activeV: 0,
+    availV: 0,
+    inShopV: 0,
+    retiredV: 0,
+    activeTrips: 0,
+    pendingTrips: 0,
+    driversOnDuty: 0,
+    utilization: 0
+  });
 
   const showAlert = (msg: string) => setAlert(msg);
 
-  // ── KPIs ──────────────────────────────────────────────────────
-  const kpi = useMemo(() => {
-    const totalV = vehicles.length;
-    const activeV = vehicles.filter(v => v.status !== 'Retired').length;
-    const availV = vehicles.filter(v => v.status === 'Available').length;
-    const inShopV = vehicles.filter(v => v.status === 'In Shop').length;
-    const retiredV = vehicles.filter(v => v.status === 'Retired').length;
-    const activeTrips = trips.filter(t => t.status === 'Dispatched').length;
-    const pendingTrips = trips.filter(t => t.status === 'Draft').length;
-    const driversOnDuty = drivers.filter(d => d.status === 'On Trip').length;
-    const utilization = totalV > 0 ? Math.round((activeV / totalV) * 100) : 0;
-    return { totalV, activeV, availV, inShopV, retiredV, activeTrips, pendingTrips, driversOnDuty, utilization };
-  }, [vehicles, drivers, trips]);
+  // ── Role Authorization Helper ──────────────────────────────────
+  const isAuthorized = (action: 'manage_vehicles' | 'manage_drivers' | 'manage_trips' | 'manage_maintenance' | 'manage_fuel' | 'manage_expenses') => {
+    const role = user.role;
+    if (role === 'Admin') return true;
 
-  // ── Business Rule: Dispatch ───────────────────────────────────
-  const dispatchTrip = (tripId: number) => {
+    switch (action) {
+      case 'manage_vehicles':
+      case 'manage_maintenance':
+        return role === 'Fleet Manager';
+      case 'manage_drivers':
+        return role === 'Safety Officer';
+      case 'manage_trips':
+        return role === 'Dispatcher';
+      case 'manage_fuel':
+        return role === 'Fleet Manager' || role === 'Dispatcher';
+      case 'manage_expenses':
+        return role === 'Financial Analyst' || role === 'Fleet Manager';
+      default:
+        return false;
+    }
+  };
+
+  // Fetch only authorized databases from API
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Fetch dashboard KPIs (always allowed for authenticated users)
+      try {
+        const kpisRes = await axios.get(`${API_URL}/dashboard/kpis`, { headers });
+        if (kpisRes.data.success) {
+          setKpisState(kpisRes.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard KPIs', err);
+      }
+
+      const role = user.role;
+      const promises: Promise<any>[] = [];
+      const keys: string[] = [];
+
+      const shouldFetchVehicles = role === 'Admin' || role === 'Fleet Manager' || role === 'Dispatcher' || role === 'Financial Analyst';
+      const shouldFetchDrivers = role === 'Admin' || role === 'Safety Officer' || role === 'Dispatcher';
+      const shouldFetchTrips = role === 'Admin' || role === 'Dispatcher' || role === 'Financial Analyst';
+      const shouldFetchMaintenance = role === 'Admin' || role === 'Fleet Manager' || role === 'Financial Analyst';
+      const shouldFetchFuel = role === 'Admin' || role === 'Fleet Manager' || role === 'Dispatcher' || role === 'Financial Analyst';
+      const shouldFetchExpenses = role === 'Admin' || role === 'Financial Analyst' || role === 'Fleet Manager';
+
+      if (shouldFetchVehicles) {
+        promises.push(axios.get(`${API_URL}/vehicles`, { headers }));
+        keys.push('vehicles');
+      }
+      if (shouldFetchDrivers) {
+        promises.push(axios.get(`${API_URL}/drivers`, { headers }));
+        keys.push('drivers');
+      }
+      if (shouldFetchTrips) {
+        promises.push(axios.get(`${API_URL}/trips`, { headers }));
+        keys.push('trips');
+      }
+      if (shouldFetchMaintenance) {
+        promises.push(axios.get(`${API_URL}/maintenance`, { headers }));
+        keys.push('maintenance');
+      }
+      if (shouldFetchFuel) {
+        promises.push(axios.get(`${API_URL}/fuel`, { headers }));
+        keys.push('fuel');
+      }
+      if (shouldFetchExpenses) {
+        promises.push(axios.get(`${API_URL}/expenses`, { headers }));
+        keys.push('expenses');
+      }
+
+      const results = await Promise.all(promises);
+      results.forEach((res, idx) => {
+        const key = keys[idx];
+        if (res.data.success) {
+          if (key === 'vehicles') setVehicles(res.data.data);
+          if (key === 'drivers') setDrivers(res.data.data);
+          if (key === 'trips') setTrips(res.data.data);
+          if (key === 'maintenance') setMaintenances(res.data.data);
+          if (key === 'fuel') setFuelLogs(res.data.data);
+          if (key === 'expenses') setExpenses(res.data.data);
+        }
+      });
+    } catch (err: any) {
+      showAlert('Failed to synchronize data with backend server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [section]);
+
+  // ── Business Rule Actions ────────────────────────────────────
+  const dispatchTrip = async (tripId: number) => {
+    if (!isAuthorized('manage_trips')) {
+      showAlert('Access Denied: Only Dispatchers or Admins can dispatch trips.');
+      return;
+    }
     const trip = trips.find(t => t.id === tripId);
     if (!trip) return;
     const vehicle = vehicles.find(v => v.id === trip.vehicleId);
     const driver = drivers.find(d => d.id === trip.driverId);
-    if (!vehicle || vehicle.status !== 'Available') { showAlert('Vehicle is not available for dispatch.'); return; }
-    if (!driver || driver.status !== 'Available') { showAlert('Driver is not available for dispatch.'); return; }
-    if (isExpired(driver.licenseExpiry)) { showAlert(`Driver ${driver.name}'s license has expired. Cannot dispatch.`); return; }
+    if (!vehicle || vehicle.status !== 'Available') { showAlert('Selected vehicle is not available for dispatch.'); return; }
+    if (!driver) return;
     if (driver.status === 'Suspended') { showAlert(`Driver ${driver.name} is suspended. Cannot dispatch.`); return; }
+    if (isExpired(driver.licenseExpiry)) { showAlert(`Driver ${driver.name}'s license has expired. Cannot dispatch.`); return; }
+    if (driver.status !== 'Available') { showAlert('Selected driver is not available for dispatch.'); return; }
     if (trip.cargoWeight > vehicle.capacity) { showAlert(`Cargo (${trip.cargoWeight} kg) exceeds vehicle capacity (${vehicle.capacity} kg).`); return; }
-    setTrips(cur => cur.map(t => t.id === tripId ? { ...t, status: 'Dispatched' } : t));
-    setVehicles(cur => cur.map(v => v.id === trip.vehicleId ? { ...v, status: 'On Trip' } : v));
-    setDrivers(cur => cur.map(d => d.id === trip.driverId ? { ...d, status: 'On Trip' } : d));
-  };
 
-  const completeTrip = (tripId: number) => {
-    const trip = trips.find(t => t.id === tripId);
-    if (!trip) return;
-    setTrips(cur => cur.map(t => t.id === tripId ? { ...t, status: 'Completed' } : t));
-    setVehicles(cur => cur.map(v => v.id === trip.vehicleId ? { ...v, status: 'Available' } : v));
-    setDrivers(cur => cur.map(d => d.id === trip.driverId ? { ...d, status: 'Available' } : d));
-  };
 
-  const cancelTrip = (tripId: number) => {
-    const trip = trips.find(t => t.id === tripId);
-    if (!trip) return;
-    setTrips(cur => cur.map(t => t.id === tripId ? { ...t, status: 'Cancelled' } : t));
-    if (trip.status === 'Dispatched') {
-      setVehicles(cur => cur.map(v => v.id === trip.vehicleId ? { ...v, status: 'Available' } : v));
-      setDrivers(cur => cur.map(d => d.id === trip.driverId ? { ...d, status: 'Available' } : d));
+    try {
+      const res = await axios.post(`${API_URL}/trips/${tripId}/dispatch`);
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err: any) {
+      showAlert(err.response?.data?.errors?.[0] || 'Dispatch operation failed.');
     }
   };
 
-  const closeMaintenance = (id: number) => {
-    const m = maintenances.find(r => r.id === id);
-    if (!m) return;
-    setMaintenances(cur => cur.map(r => r.id === id ? { ...r, status: 'Closed' } : r));
-    const vehicle = vehicles.find(v => v.id === m.vehicleId);
-    if (vehicle && vehicle.status === 'In Shop') {
-      setVehicles(cur => cur.map(v => v.id === m.vehicleId ? { ...v, status: 'Available' } : v));
+  const completeTrip = async (tripId: number, fuelUsed: number = 0) => {
+    if (!isAuthorized('manage_trips')) {
+      showAlert('Access Denied: Only Dispatchers or Admins can complete trips.');
+      return;
+    }
+    try {
+      const res = await axios.post(`${API_URL}/trips/${tripId}/complete`, { fuelUsed });
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err: any) {
+      showAlert('Failed to complete trip.');
     }
   };
 
-  const handleLogout = () => { localStorage.removeItem('transitops_user'); navigate('/login'); };
+  const cancelTrip = async (tripId: number) => {
+    if (!isAuthorized('manage_trips')) {
+      showAlert('Access Denied: Only Dispatchers or Admins can cancel trips.');
+      return;
+    }
+    try {
+      const res = await axios.post(`${API_URL}/trips/${tripId}/cancel`);
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err: any) {
+      showAlert('Failed to cancel trip.');
+    }
+  };
 
-  const navItems: { id: Section; label: string; icon: string }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'vehicles', label: 'Vehicles', icon: '🚚' },
-    { id: 'drivers', label: 'Drivers', icon: '👨‍✈️' },
-    { id: 'trips', label: 'Trips', icon: '🗺️' },
-    { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
-    { id: 'fuel', label: 'Fuel Logs', icon: '⛽' },
-    { id: 'expenses', label: 'Expenses', icon: '💰' },
-    { id: 'reports', label: 'Reports', icon: '📈' },
+  const closeMaintenance = async (id: number) => {
+    if (!isAuthorized('manage_maintenance')) {
+      showAlert('Access Denied: Only Fleet Managers or Admins can close maintenance logs.');
+      return;
+    }
+    try {
+      const res = await axios.put(`${API_URL}/maintenance/${id}/close`);
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err: any) {
+      showAlert('Failed to close maintenance.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('transitops_user');
+    localStorage.removeItem('accessToken');
+    navigate('/login');
+  };
+
+  const navItems: { id: Section; label: string; icon: React.ComponentType<any> }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'vehicles', label: 'Vehicles', icon: Truck },
+    { id: 'drivers', label: 'Drivers', icon: Users },
+    { id: 'trips', label: 'Trips', icon: Route },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+    { id: 'fuel', label: 'Fuel Logs', icon: Fuel },
+    { id: 'expenses', label: 'Expenses', icon: DollarSign },
+    { id: 'reports', label: 'Reports', icon: TrendingUp },
   ];
+
+  const filteredNavItems = navItems.filter(item => {
+    if (item.id === 'dashboard') return true;
+    if (item.id === 'vehicles') return user.role === 'Admin' || user.role === 'Fleet Manager';
+    if (item.id === 'drivers') return user.role === 'Admin' || user.role === 'Safety Officer';
+    if (item.id === 'trips') return user.role === 'Admin' || user.role === 'Dispatcher';
+    if (item.id === 'maintenance') return user.role === 'Admin' || user.role === 'Fleet Manager';
+    if (item.id === 'fuel') return user.role === 'Admin' || user.role === 'Fleet Manager' || user.role === 'Dispatcher' || user.role === 'Financial Analyst';
+    if (item.id === 'expenses') return user.role === 'Admin' || user.role === 'Financial Analyst' || user.role === 'Fleet Manager';
+    if (item.id === 'reports') return user.role === 'Admin' || user.role === 'Fleet Manager' || user.role === 'Dispatcher' || user.role === 'Financial Analyst';
+    return false;
+  });
 
   return (
     <div className="db-shell">
@@ -197,23 +323,26 @@ export default function Dashboard() {
       {/* ── Sidebar ── */}
       <aside className="db-sidebar">
         <div className="db-sidebar-brand">
-          <span>🚛</span>
+          <Truck className="db-sidebar-brand-icon" size={24} style={{ color: 'var(--primary)', marginRight: '8px' }} />
           <span>TransitOps</span>
         </div>
         <nav className="db-sidebar-nav">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              className={`db-nav-item ${section === item.id ? 'active' : ''}`}
-              onClick={() => setSection(item.id)}
-            >
-              <span className="db-nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {filteredNavItems.map(item => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                className={`db-nav-item ${section === item.id ? 'active' : ''}`}
+                onClick={() => setSection(item.id)}
+              >
+                <span className="db-nav-icon"><Icon size={18} /></span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
         <div className="db-sidebar-user">
-          <div className="db-sidebar-avatar">{user.name.charAt(0)}</div>
+          <div className="db-sidebar-avatar">{user.name?.charAt(0) || 'U'}</div>
           <div className="db-sidebar-user-info">
             <span className="db-sidebar-name">{user.name}</span>
             <span className="db-sidebar-role">{user.role}</span>
@@ -226,163 +355,209 @@ export default function Dashboard() {
         {/* Topbar */}
         <header className="db-topbar">
           <div className="db-topbar-left">
-            <h1 className="db-page-title">
-              {navItems.find(n => n.id === section)?.icon} {navItems.find(n => n.id === section)?.label}
+            <h1 className="db-page-title" style={{ display: 'flex', alignItems: 'center' }}>
+              {(() => {
+                const ItemIcon = navItems.find(n => n.id === section)?.icon;
+                return ItemIcon ? <ItemIcon size={24} style={{ marginRight: '8px', color: 'var(--primary)' }} /> : null;
+              })()}
+              {navItems.find(n => n.id === section)?.label}
             </h1>
           </div>
           <div className="db-topbar-right">
             <button className="ghost" onClick={() => navigate('/')}>← Home</button>
-            <button className="ghost" onClick={handleLogout}>Logout</button>
+            <button className="ghost" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <LogOut size={16} /> Logout
+            </button>
           </div>
         </header>
 
         <div className="db-content">
-          {section === 'dashboard' && <DashboardView kpi={kpi} vehicles={vehicles} trips={trips} drivers={drivers} maintenances={maintenances} />}
-          {section === 'vehicles' && <VehiclesView vehicles={vehicles} setVehicles={setVehicles} maintenances={maintenances} setMaintenances={setMaintenances} showAlert={showAlert} />}
-          {section === 'drivers' && <DriversView drivers={drivers} setDrivers={setDrivers} />}
-          {section === 'trips' && <TripsView trips={trips} setTrips={setTrips} vehicles={vehicles} drivers={drivers} dispatchTrip={dispatchTrip} completeTrip={completeTrip} cancelTrip={cancelTrip} showAlert={showAlert} />}
-          {section === 'maintenance' && <MaintenanceView maintenances={maintenances} setMaintenances={setMaintenances} vehicles={vehicles} setVehicles={setVehicles} closeMaintenance={closeMaintenance} />}
-          {section === 'fuel' && <FuelView fuelLogs={fuelLogs} setFuelLogs={setFuelLogs} vehicles={vehicles} />}
-          {section === 'expenses' && <ExpensesView expenses={expenses} setExpenses={setExpenses} vehicles={vehicles} />}
-          {section === 'reports' && <ReportsView vehicles={vehicles} trips={trips} fuelLogs={fuelLogs} maintenances={maintenances} expenses={expenses} />}
+          {loading ? (
+            <p className="db-empty">Synchronizing database tables with SQLite...</p>
+          ) : (
+            <>
+              {section === 'dashboard' && (
+                <DashboardView
+                  kpi={kpisState}
+                  vehicles={vehicles}
+                  trips={trips}
+                  drivers={drivers}
+                  maintenances={maintenances}
+                  expenses={expenses}
+                  user={user}
+                />
+              )}
+              {section === 'vehicles' && <VehiclesView vehicles={vehicles} reloadData={fetchData} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'drivers' && <DriversView drivers={drivers} reloadData={fetchData} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'trips' && <TripsView trips={trips} reloadData={fetchData} vehicles={vehicles} drivers={drivers} dispatchTrip={dispatchTrip} completeTrip={completeTrip} cancelTrip={cancelTrip} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'maintenance' && <MaintenanceView maintenances={maintenances} reloadData={fetchData} vehicles={vehicles} closeMaintenance={closeMaintenance} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'fuel' && <FuelView fuelLogs={fuelLogs} reloadData={fetchData} vehicles={vehicles} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'expenses' && <ExpensesView expenses={expenses} reloadData={fetchData} vehicles={vehicles} isAuthorized={isAuthorized} showAlert={showAlert} />}
+              {section === 'reports' && <ReportsView vehicles={vehicles} trips={trips} fuelLogs={fuelLogs} maintenances={maintenances} expenses={expenses} />}
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// DASHBOARD VIEW
-// ════════════════════════════════════════════════════════════════
-function DashboardView({ kpi, vehicles, trips, drivers, maintenances }: any) {
+// ── Views ──
+function DashboardView({ kpi, trips, drivers, maintenances, expenses, user }: any) {
   const activeTrips = trips.filter((t: Trip) => t.status === 'Dispatched');
   const recentMaint = maintenances.filter((m: Maintenance) => m.status === 'Open');
   const expiringDrivers = drivers.filter((d: Driver) => {
     const days = Math.floor((new Date(d.licenseExpiry).getTime() - Date.now()) / 86400000);
     return days >= 0 && days <= 90;
   });
+  const recentExpenses = (expenses || []).slice(-5).reverse();
+
+  const showVehiclesKPI = user.role === 'Admin' || user.role === 'Fleet Manager' || user.role === 'Financial Analyst' || user.role === 'Dispatcher';
+  const showTripsKPI = user.role === 'Admin' || user.role === 'Dispatcher' || user.role === 'Fleet Manager' || user.role === 'Financial Analyst';
+  const showDriversKPI = user.role === 'Admin' || user.role === 'Safety Officer';
 
   return (
     <div className="db-section">
-      {/* Hero */}
       <div className="hero-card" style={{ marginBottom: '1.5rem' }}>
         <div>
-          <p className="eyebrow">Operations Overview</p>
-          <h2>Keep dispatch, maintenance, and compliance moving.</h2>
-          <p>Monitor fleet, drivers, active trips, and vehicle health in real-time.</p>
+          <p className="eyebrow">Operations Overview ({user.role})</p>
+          <h2>Welcome back, {user.name}</h2>
+          <p>Monitor your fleet, maintenance logs, compliance, and expenses in real-time.</p>
         </div>
         <div className="hero-badges">
-          <span>RBAC Ready</span>
-          <span>Audit-Friendly</span>
-          <span>Enterprise Scale</span>
+          <span>RBAC Active</span>
+          <span>Role: {user.role}</span>
+          <span>SQLite Database</span>
         </div>
       </div>
 
-      {/* KPI Grid - Row 1 */}
       <div className="db-kpi-grid">
-        <StatCard label="Available Vehicles" value={kpi.availV} sub="ready for dispatch" accent="#16a34a" />
-        <StatCard label="In Maintenance" value={kpi.inShopV} sub="vehicles in shop" accent="#d97706" />
-        <StatCard label="Retired" value={kpi.retiredV} sub="out of service" accent="#94a3b8" />
-        <StatCard label="Active Trips" value={kpi.activeTrips} sub="currently dispatched" accent="#2563eb" />
-        <StatCard label="Pending Trips" value={kpi.pendingTrips} sub="awaiting dispatch" accent="#8b5cf6" />
-        <StatCard label="Drivers On Duty" value={kpi.driversOnDuty} sub="currently on trip" accent="#0891b2" />
-        <StatCard label="Fleet Utilization" value={`${kpi.utilization}%`} sub="active / total vehicles" accent="#059669" />
-        <StatCard label="Total Fleet" value={kpi.totalV} sub="registered vehicles" accent="#475569" />
+        {showVehiclesKPI && (
+          <>
+            <StatCard label="Available Vehicles" value={kpi.availV} sub="ready for dispatch" accent="#16a34a" />
+            <StatCard label="In Maintenance" value={kpi.inShopV} sub="vehicles in shop" accent="#d97706" />
+            <StatCard label="Retired" value={kpi.retiredV} sub="out of service" accent="#94a3b8" />
+          </>
+        )}
+        {showTripsKPI && (
+          <>
+            <StatCard label="Active Trips" value={kpi.activeTrips} sub="currently dispatched" accent="#2563eb" />
+            <StatCard label="Pending Trips" value={kpi.pendingTrips} sub="awaiting dispatch" accent="#8b5cf6" />
+          </>
+        )}
+        {showDriversKPI && (
+          <StatCard label="Drivers On Duty" value={kpi.driversOnDuty} sub="currently on trip" accent="#0891b2" />
+        )}
+        {showVehiclesKPI && (
+          <>
+            <StatCard label="Fleet Utilization" value={`${kpi.utilization}%`} sub="active / total vehicles" accent="#059669" />
+            <StatCard label="Total Fleet" value={kpi.totalV} sub="registered vehicles" accent="#475569" />
+          </>
+        )}
       </div>
 
-      {/* Utilization bar */}
-      <div className="panel" style={{ marginTop: '1.5rem' }}>
-        <div className="panel-header"><h3>Fleet Utilization at a Glance</h3></div>
-        <div className="db-util-bars">
-          {[
-            { label: 'Available', count: kpi.availV, total: kpi.totalV, color: '#16a34a' },
-            { label: 'On Trip', count: vehicles.filter((v: Vehicle) => v.status === 'On Trip').length, total: kpi.totalV, color: '#2563eb' },
-            { label: 'In Shop', count: kpi.inShopV, total: kpi.totalV, color: '#d97706' },
-            { label: 'Retired', count: kpi.retiredV, total: kpi.totalV, color: '#94a3b8' },
-          ].map(b => (
-            <div key={b.label} className="db-util-row">
-              <span className="db-util-label">{b.label}</span>
-              <div className="db-util-track">
-                <div className="db-util-fill" style={{ width: `${kpi.totalV > 0 ? (b.count / kpi.totalV) * 100 : 0}%`, background: b.color }} />
-              </div>
-              <span className="db-util-count">{b.count} / {kpi.totalV}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Active trips + license alerts */}
       <div className="db-two-col" style={{ marginTop: '1.5rem' }}>
-        <div className="panel">
-          <div className="panel-header"><h3>🚀 Active Trips</h3></div>
-          {activeTrips.length === 0 ? (
-            <p className="db-empty">No active trips right now.</p>
-          ) : (
-            <div className="rows">
-              {activeTrips.map((t: Trip) => (
-                <div className="card" key={t.id}>
-                  <div>
-                    <h4>{t.source} → {t.destination}</h4>
-                    <p>Vehicle #{t.vehicleId} · Driver #{t.driverId} · {t.cargoWeight} kg</p>
-                  </div>
-                  <Pill status="Dispatched" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="panel">
-          <div className="panel-header"><h3>⚠️ License Expiry Alerts</h3></div>
-          {expiringDrivers.length === 0 ? (
-            <p className="db-empty">All licenses valid for 90+ days.</p>
-          ) : (
-            <div className="rows">
-              {expiringDrivers.map((d: Driver) => {
-                const days = Math.floor((new Date(d.licenseExpiry).getTime() - Date.now()) / 86400000);
-                return (
-                  <div className="card" key={d.id} style={{ borderLeft: '3px solid #d97706' }}>
+        {/* Panel 1: Active Trips (Dispatcher / Admin) */}
+        {(user.role === 'Admin' || user.role === 'Dispatcher') && (
+          <div className="panel">
+            <div className="panel-header"><h3>🚀 Active Trips</h3></div>
+            {activeTrips.length === 0 ? (
+              <p className="db-empty">No active trips right now.</p>
+            ) : (
+              <div className="rows">
+                {activeTrips.map((t: Trip) => (
+                  <div className="card" key={t.id}>
                     <div>
-                      <h4>{d.name}</h4>
-                      <p>{d.licenseNumber} · Expires {d.licenseExpiry}</p>
+                      <h4>{t.source} → {t.destination}</h4>
+                      <p>Vehicle #{t.vehicleId} · Driver #{t.driverId} · {t.cargoWeight} kg</p>
                     </div>
-                    <span className="pill on-trip">{days}d left</span>
+                    <Pill status="Dispatched" />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Open maintenance */}
-      {recentMaint.length > 0 && (
-        <div className="panel" style={{ marginTop: '1.5rem' }}>
-          <div className="panel-header"><h3>🔧 Open Maintenance Records</h3></div>
-          <div className="rows">
-            {recentMaint.map((m: Maintenance) => (
-              <div className="card" key={m.id}>
-                <div>
-                  <h4>{m.type} — Vehicle #{m.vehicleId}</h4>
-                  <p>{m.description} · {m.date}</p>
-                </div>
-                <div className="card-actions">
-                  <Pill status="Open" />
-                  <span className="cost-badge">{fmtCurrency(m.cost)}</span>
-                </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Panel 2: License Expiry Alerts (Safety Officer / Admin) */}
+        {(user.role === 'Admin' || user.role === 'Safety Officer') && (
+          <div className="panel">
+            <div className="panel-header"><h3>⚠️ License Expiry Alerts</h3></div>
+            {expiringDrivers.length === 0 ? (
+              <p className="db-empty">All licenses valid for 90+ days.</p>
+            ) : (
+              <div className="rows">
+                {expiringDrivers.map((d: Driver) => {
+                  const days = Math.floor((new Date(d.licenseExpiry).getTime() - Date.now()) / 86400000);
+                  return (
+                    <div className="card" key={d.id} style={{ borderLeft: '3px solid #d97706' }}>
+                      <div>
+                        <h4>{d.name}</h4>
+                        <p>{d.licenseNumber} · Expires {d.licenseExpiry}</p>
+                      </div>
+                      <span className="pill on-trip">{days}d left</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Panel 3: Open Maintenance Logs (Fleet Manager / Admin) */}
+        {(user.role === 'Admin' || user.role === 'Fleet Manager') && (
+          <div className="panel">
+            <div className="panel-header"><h3>🔧 Open Maintenance Tasks</h3></div>
+            {recentMaint.length === 0 ? (
+              <p className="db-empty">No open maintenance logs.</p>
+            ) : (
+              <div className="rows">
+                {recentMaint.map((m: Maintenance) => (
+                  <div className="card" key={m.id}>
+                    <div>
+                      <h4>Vehicle #{m.vehicleId} · {m.type}</h4>
+                      <p>{m.description}</p>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
+                        Cost: {fmtCurrency(m.cost)} · Logged on {m.date}
+                      </p>
+                    </div>
+                    <Pill status="Open" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Panel 4: Recent Expenses (Financial Analyst / Admin) */}
+        {(user.role === 'Admin' || user.role === 'Financial Analyst') && (
+          <div className="panel">
+            <div className="panel-header"><h3>💰 Recent Expenses</h3></div>
+            {recentExpenses.length === 0 ? (
+              <p className="db-empty">No expenses logged yet.</p>
+            ) : (
+              <div className="rows">
+                {recentExpenses.map((e: Expense) => (
+                  <div className="card" key={e.id}>
+                    <div>
+                      <h4>Vehicle #{e.vehicleId} · {e.type}</h4>
+                      <p>{e.notes || 'No description'}</p>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
+                        Amount: {fmtCurrency(e.amount)} · Date: {e.date}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// VEHICLES VIEW
-// ════════════════════════════════════════════════════════════════
-function VehiclesView({ vehicles, setVehicles, maintenances, setMaintenances, showAlert }: any) {
+function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
   const [filter, setFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [search, setSearch] = useState('');
@@ -397,34 +572,54 @@ function VehiclesView({ vehicles, setVehicles, maintenances, setMaintenances, sh
     return statusOk && typeOk && searchOk;
   }), [vehicles, filter, typeFilter, search]);
 
-  const addVehicle = () => {
+  const addVehicle = async () => {
+    if (!isAuthorized('manage_vehicles')) {
+      showAlert('Access Denied: Only Fleet Managers or Admins can register vehicles.');
+      return;
+    }
     if (!form.registration || !form.name || !form.capacity) { setFormErr('Registration, Name, and Capacity are required.'); return; }
-    if (vehicles.some((v: Vehicle) => v.registration === form.registration)) { setFormErr('Registration number must be unique.'); return; }
-    const id = Math.max(0, ...vehicles.map((v: Vehicle) => v.id)) + 1;
-    setVehicles((cur: Vehicle[]) => [...cur, { id, ...form, capacity: +form.capacity, odometer: +form.odometer || 0, cost: +form.cost || 0, status: 'Available' as VehicleStatus }]);
-    setForm({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '' });
-    setFormErr('');
-    setShowForm(false);
+    try {
+      const res = await axios.post(`${API_URL}/vehicles`, {
+        ...form,
+        capacity: +form.capacity,
+        odometer: +form.odometer || 0,
+        cost: +form.cost || 0
+      });
+      if (res.data.success) {
+        setForm({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '' });
+        setFormErr('');
+        setShowForm(false);
+        reloadData();
+      }
+    } catch (err: any) {
+      setFormErr(err.response?.data?.errors?.[0] || 'Failed to save vehicle.');
+    }
   };
 
-  const retireVehicle = (id: number) => {
-    const v = vehicles.find((x: Vehicle) => x.id === id);
-    if (v?.status === 'On Trip') { showAlert('Cannot retire a vehicle that is On Trip.'); return; }
-    setVehicles((cur: Vehicle[]) => cur.map((v: Vehicle) => v.id === id ? { ...v, status: 'Retired' } : v));
+  const retireVehicle = async (id: number) => {
+    if (!isAuthorized('manage_vehicles')) {
+      showAlert('Access Denied: Only Fleet Managers or Admins can retire vehicles.');
+      return;
+    }
+    try {
+      await axios.put(`${API_URL}/vehicles/${id}/status`, { status: 'Retired' });
+      reloadData();
+    } catch (err: any) {
+      showAlert('Failed to retire vehicle.');
+    }
   };
 
-  const sendToShop = (id: number) => {
-    const v = vehicles.find((x: Vehicle) => x.id === id);
-    if (v?.status === 'On Trip') { showAlert('Cannot send a vehicle On Trip to maintenance.'); return; }
-    setVehicles((cur: Vehicle[]) => cur.map((v: Vehicle) => v.id === id ? { ...v, status: 'In Shop' } : v));
-    const newId = Math.max(0, ...maintenances.map((m: Maintenance) => m.id)) + 1;
-    setMaintenances((cur: Maintenance[]) => [...cur, { id: newId, vehicleId: id, type: 'Unscheduled', description: 'Manual maintenance entry', cost: 0, date: today, status: 'Open' }]);
-  };
-
-  const exportCSV = () => {
-    const rows = [['ID', 'Registration', 'Name', 'Model', 'Type', 'Capacity', 'Odometer', 'Cost', 'Status'], ...vehicles.map((v: Vehicle) => [v.id, v.registration, v.name, v.model, v.type, v.capacity, v.odometer, v.cost, v.status])];
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'vehicles.csv'; a.click();
+  const sendToShop = async (id: number) => {
+    if (!isAuthorized('manage_maintenance')) {
+      showAlert('Access Denied: Only Fleet Managers or Admins can send vehicles to maintenance.');
+      return;
+    }
+    try {
+      await axios.post(`${API_URL}/maintenance`, { vehicleId: id, type: 'Unscheduled', description: 'Manual maintenance entry', cost: 0 });
+      reloadData();
+    } catch (err: any) {
+      showAlert('Failed to send vehicle to maintenance.');
+    }
   };
 
   return (
@@ -441,10 +636,7 @@ function VehiclesView({ vehicles, setVehicles, maintenances, setMaintenances, sh
             <option>Van</option><option>Bus</option><option>Truck</option>
           </select>
         </div>
-        <div className="db-section-actions">
-          <button className="ghost" onClick={exportCSV}>⬇ Export CSV</button>
-          <button className="primary" onClick={() => setShowForm(!showForm)}>+ Add Vehicle</button>
-        </div>
+        <button className="primary" onClick={() => setShowForm(!showForm)}>+ Add Vehicle</button>
       </div>
 
       {showForm && (
@@ -455,7 +647,7 @@ function VehiclesView({ vehicles, setVehicles, maintenances, setMaintenances, sh
             <div className="db-field"><label>Registration *</label><input value={form.registration} onChange={e => setForm({ ...form, registration: e.target.value })} /></div>
             <div className="db-field"><label>Name *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
             <div className="db-field"><label>Model</label><input value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} /></div>
-            <div className="db-field"><label>Type</label><select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}><option>Van</option><option>Bus</option><option>Truck</option></select></div>
+            <div className="db-field"><label>Type</label><select value={form.type} onChange={e => setForm({ ...form, type: e.target.value as any })}><option>Van</option><option>Bus</option><option>Truck</option></select></div>
             <div className="db-field"><label>Max Capacity (kg) *</label><input type="number" value={form.capacity} onChange={e => setForm({ ...form, capacity: e.target.value })} /></div>
             <div className="db-field"><label>Odometer (km)</label><input type="number" value={form.odometer} onChange={e => setForm({ ...form, odometer: e.target.value })} /></div>
             <div className="db-field"><label>Acquisition Cost ($)</label><input type="number" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>
@@ -495,10 +687,7 @@ function VehiclesView({ vehicles, setVehicles, maintenances, setMaintenances, sh
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// DRIVERS VIEW
-// ════════════════════════════════════════════════════════════════
-function DriversView({ drivers, setDrivers }: any) {
+function DriversView({ drivers, reloadData, isAuthorized, showAlert }: any) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [showForm, setShowForm] = useState(false);
@@ -511,21 +700,52 @@ function DriversView({ drivers, setDrivers }: any) {
     return statusOk && searchOk;
   }), [drivers, filter, search]);
 
-  const addDriver = () => {
+  const addDriver = async () => {
+    if (!isAuthorized('manage_drivers')) {
+      showAlert('Access Denied: Only Safety Officers or Admins can register drivers.');
+      return;
+    }
     if (!form.name || !form.licenseNumber || !form.licenseExpiry) { setFormErr('Name, License Number, and Expiry are required.'); return; }
-    const id = Math.max(0, ...drivers.map((d: Driver) => d.id)) + 1;
-    setDrivers((cur: Driver[]) => [...cur, { id, ...form, safetyScore: +form.safetyScore || 100, status: 'Available' as DriverStatus }]);
-    setForm({ name: '', licenseNumber: '', licenseCategory: 'B', licenseExpiry: '', contact: '', safetyScore: '' });
-    setFormErr(''); setShowForm(false);
+    try {
+      const res = await axios.post(`${API_URL}/drivers`, {
+        ...form,
+        safetyScore: +form.safetyScore || 100
+      });
+      if (res.data.success) {
+        setForm({ name: '', licenseNumber: '', licenseCategory: 'B', licenseExpiry: '', contact: '', safetyScore: '' });
+        setFormErr('');
+        setShowForm(false);
+        reloadData();
+      }
+    } catch (err: any) {
+      setFormErr(err.response?.data?.errors?.[0] || 'Failed to save driver.');
+    }
   };
 
-  const suspendDriver = (id: number) => setDrivers((cur: Driver[]) => cur.map((d: Driver) => d.id === id ? { ...d, status: 'Suspended' } : d));
-  const activateDriver = (id: number) => setDrivers((cur: Driver[]) => cur.map((d: Driver) => d.id === id ? { ...d, status: 'Available' } : d));
+  const suspendDriver = async (id: number) => {
+    if (!isAuthorized('manage_drivers')) {
+      showAlert('Access Denied: Only Safety Officers or Admins can suspend drivers.');
+      return;
+    }
+    try {
+      await axios.put(`${API_URL}/drivers/${id}/status`, { status: 'Suspended' });
+      reloadData();
+    } catch (err: any) {
+      showAlert('Failed to suspend driver.');
+    }
+  };
 
-  const exportCSV = () => {
-    const rows = [['ID', 'Name', 'License', 'Category', 'Expiry', 'Contact', 'Safety Score', 'Status'], ...drivers.map((d: Driver) => [d.id, d.name, d.licenseNumber, d.licenseCategory, d.licenseExpiry, d.contact, d.safetyScore, d.status])];
-    const csv = rows.map((r: any[]) => r.join(',')).join('\n');
-    const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'drivers.csv'; a.click();
+  const activateDriver = async (id: number) => {
+    if (!isAuthorized('manage_drivers')) {
+      showAlert('Access Denied: Only Safety Officers or Admins can activate drivers.');
+      return;
+    }
+    try {
+      await axios.put(`${API_URL}/drivers/${id}/status`, { status: 'Available' });
+      reloadData();
+    } catch (err: any) {
+      showAlert('Failed to activate driver.');
+    }
   };
 
   return (
@@ -538,10 +758,7 @@ function DriversView({ drivers, setDrivers }: any) {
             <option>Available</option><option>On Trip</option><option>Off Duty</option><option>Suspended</option>
           </select>
         </div>
-        <div className="db-section-actions">
-          <button className="ghost" onClick={exportCSV}>⬇ Export CSV</button>
-          <button className="primary" onClick={() => setShowForm(!showForm)}>+ Add Driver</button>
-        </div>
+        <button className="primary" onClick={() => setShowForm(!showForm)}>+ Add Driver</button>
       </div>
 
       {showForm && (
@@ -599,34 +816,54 @@ function DriversView({ drivers, setDrivers }: any) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// TRIPS VIEW
-// ════════════════════════════════════════════════════════════════
-function TripsView({ trips, setTrips, vehicles, drivers, dispatchTrip, completeTrip, cancelTrip, showAlert }: any) {
+function TripsView({ trips, reloadData, vehicles, drivers, dispatchTrip, completeTrip, cancelTrip, isAuthorized, showAlert }: any) {
   const [filter, setFilter] = useState('All');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ source: '', destination: '', vehicleId: '', driverId: '', cargoWeight: '', distance: '' });
   const [formErr, setFormErr] = useState('');
+  const [completeTripId, setCompleteTripId] = useState<number | null>(null);
+  const [fuelUsed, setFuelUsed] = useState('');
 
   const filtered = useMemo(() => trips.filter((t: Trip) => filter === 'All' || t.status === filter), [trips, filter]);
 
   const availVehicles = vehicles.filter((v: Vehicle) => v.status === 'Available');
-  const availDrivers = drivers.filter((d: Driver) => d.status === 'Available' && !isExpired(d.licenseExpiry) && d.status !== 'Suspended');
+  const availDrivers = drivers.filter((d: Driver) => d.status === 'Available' && !isExpired(d.licenseExpiry));
 
-  const createTrip = () => {
-    if (!form.source || !form.destination || !form.vehicleId || !form.driverId || !form.cargoWeight) { setFormErr('All fields except Distance are required.'); return; }
+
+  const createTrip = async () => {
+    if (!isAuthorized('manage_trips')) {
+      showAlert('Access Denied: Only Dispatchers or Admins can create trips.');
+      return;
+    }
+    if (!form.source || !form.destination || !form.vehicleId || !form.driverId || !form.cargoWeight) { setFormErr('All fields are required.'); return; }
     const vehicle = vehicles.find((v: Vehicle) => v.id === +form.vehicleId);
     if (vehicle && +form.cargoWeight > vehicle.capacity) { setFormErr(`Cargo (${form.cargoWeight} kg) exceeds vehicle capacity (${vehicle.capacity} kg).`); return; }
-    const id = Math.max(0, ...trips.map((t: Trip) => t.id)) + 1;
-    setTrips((cur: Trip[]) => [...cur, { id, ...form, vehicleId: +form.vehicleId, driverId: +form.driverId, cargoWeight: +form.cargoWeight, distance: +form.distance || 0, status: 'Draft' as TripStatus }]);
-    setForm({ source: '', destination: '', vehicleId: '', driverId: '', cargoWeight: '', distance: '' });
-    setFormErr(''); setShowForm(false);
+
+    try {
+      const res = await axios.post(`${API_URL}/trips`, {
+        ...form,
+        vehicleId: +form.vehicleId,
+        driverId: +form.driverId,
+        cargoWeight: +form.cargoWeight,
+        distance: +form.distance || 0
+      });
+      if (res.data.success) {
+        setForm({ source: '', destination: '', vehicleId: '', driverId: '', cargoWeight: '', distance: '' });
+        setFormErr('');
+        setShowForm(false);
+        reloadData();
+      }
+    } catch (err: any) {
+      setFormErr(err.response?.data?.errors?.[0] || 'Failed to create trip.');
+    }
   };
 
-  const exportCSV = () => {
-    const rows = [['ID', 'Source', 'Destination', 'Vehicle', 'Driver', 'Cargo (kg)', 'Distance (km)', 'Status'], ...trips.map((t: Trip) => [t.id, t.source, t.destination, t.vehicleId, t.driverId, t.cargoWeight, t.distance, t.status])];
-    const csv = rows.map((r: any[]) => r.join(',')).join('\n');
-    const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'trips.csv'; a.click();
+  const handleCompleteSubmit = () => {
+    if (completeTripId) {
+      completeTrip(completeTripId, +fuelUsed || 0);
+      setCompleteTripId(null);
+      setFuelUsed('');
+    }
   };
 
   return (
@@ -638,10 +875,7 @@ function TripsView({ trips, setTrips, vehicles, drivers, dispatchTrip, completeT
             <option>Draft</option><option>Dispatched</option><option>Completed</option><option>Cancelled</option>
           </select>
         </div>
-        <div className="db-section-actions">
-          <button className="ghost" onClick={exportCSV}>⬇ Export CSV</button>
-          <button className="primary" onClick={() => setShowForm(!showForm)}>+ New Trip</button>
-        </div>
+        <button className="primary" onClick={() => setShowForm(!showForm)}>+ New Trip</button>
       </div>
 
       {showForm && (
@@ -670,6 +904,22 @@ function TripsView({ trips, setTrips, vehicles, drivers, dispatchTrip, completeT
         </div>
       )}
 
+      {completeTripId !== null && (
+        <div className="panel db-form-panel" style={{ border: '1.5px solid #16a34a', background: '#f0fdf4' }}>
+          <h4 className="db-form-title">Complete Trip #{completeTripId}</h4>
+          <div className="db-form-grid" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="db-field">
+              <label>Fuel Consumed (Liters)</label>
+              <input type="number" value={fuelUsed} onChange={e => setFuelUsed(e.target.value)} placeholder="e.g. 18" />
+            </div>
+          </div>
+          <div className="db-form-footer" style={{ marginTop: '1rem' }}>
+            <button className="primary" onClick={handleCompleteSubmit}>Submit & Free Fleet</button>
+            <button className="ghost" onClick={() => setCompleteTripId(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       <div className="panel">
         <div className="panel-header"><h3>Trip Management ({filtered.length})</h3></div>
         <div className="table-wrap">
@@ -687,7 +937,7 @@ function TripsView({ trips, setTrips, vehicles, drivers, dispatchTrip, completeT
                   <td>
                     <div className="db-row-actions">
                       {t.status === 'Draft' && <><button className="db-action-btn success" onClick={() => dispatchTrip(t.id)}>Dispatch</button><button className="db-action-btn danger" onClick={() => cancelTrip(t.id)}>Cancel</button></>}
-                      {t.status === 'Dispatched' && <><button className="db-action-btn" onClick={() => completeTrip(t.id)}>Complete</button><button className="db-action-btn danger" onClick={() => cancelTrip(t.id)}>Cancel</button></>}
+                      {t.status === 'Dispatched' && <><button className="db-action-btn" onClick={() => setCompleteTripId(t.id)}>Complete</button><button className="db-action-btn danger" onClick={() => cancelTrip(t.id)}>Cancel</button></>}
                     </div>
                   </td>
                 </tr>
@@ -700,21 +950,32 @@ function TripsView({ trips, setTrips, vehicles, drivers, dispatchTrip, completeT
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// MAINTENANCE VIEW
-// ════════════════════════════════════════════════════════════════
-function MaintenanceView({ maintenances, setMaintenances, vehicles, setVehicles, closeMaintenance }: any) {
+function MaintenanceView({ maintenances, reloadData, vehicles, closeMaintenance, isAuthorized, showAlert }: any) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ vehicleId: '', type: '', description: '', cost: '', date: today });
   const [formErr, setFormErr] = useState('');
 
-  const addMaintenance = () => {
+  const addMaintenance = async () => {
+    if (!isAuthorized('manage_maintenance')) {
+      showAlert('Access Denied: Only Fleet Managers or Admins can manage maintenance.');
+      return;
+    }
     if (!form.vehicleId || !form.type) { setFormErr('Vehicle and Type are required.'); return; }
-    const id = Math.max(0, ...maintenances.map((m: Maintenance) => m.id)) + 1;
-    setMaintenances((cur: Maintenance[]) => [...cur, { id, vehicleId: +form.vehicleId, type: form.type, description: form.description, cost: +form.cost || 0, date: form.date || today, status: 'Open' as MaintenanceStatus }]);
-    setVehicles((cur: Vehicle[]) => cur.map((v: Vehicle) => v.id === +form.vehicleId ? { ...v, status: 'In Shop' } : v));
-    setForm({ vehicleId: '', type: '', description: '', cost: '', date: today });
-    setFormErr(''); setShowForm(false);
+    try {
+      const res = await axios.post(`${API_URL}/maintenance`, {
+        ...form,
+        vehicleId: +form.vehicleId,
+        cost: +form.cost || 0
+      });
+      if (res.data.success) {
+        setForm({ vehicleId: '', type: '', description: '', cost: '', date: today });
+        setFormErr('');
+        setShowForm(false);
+        reloadData();
+      }
+    } catch (err: any) {
+      setFormErr(err.response?.data?.errors?.[0] || 'Failed to save maintenance.');
+    }
   };
 
   return (
@@ -777,20 +1038,34 @@ function MaintenanceView({ maintenances, setMaintenances, vehicles, setVehicles,
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// FUEL VIEW
-// ════════════════════════════════════════════════════════════════
-function FuelView({ fuelLogs, setFuelLogs, vehicles }: any) {
+function FuelView({ fuelLogs, reloadData, vehicles, isAuthorized, showAlert }: any) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ vehicleId: '', liters: '', cost: '', date: today, odometer: '' });
   const [formErr, setFormErr] = useState('');
 
-  const addFuelLog = () => {
+  const addFuelLog = async () => {
+    if (!isAuthorized('manage_fuel')) {
+      showAlert('Access Denied: Only Fleet Managers, Dispatchers, or Admins can log fuel.');
+      return;
+    }
     if (!form.vehicleId || !form.liters || !form.cost) { setFormErr('Vehicle, Liters, and Cost are required.'); return; }
-    const id = Math.max(0, ...fuelLogs.map((f: FuelLog) => f.id)) + 1;
-    setFuelLogs((cur: FuelLog[]) => [...cur, { id, vehicleId: +form.vehicleId, liters: +form.liters, cost: +form.cost, date: form.date || today, odometer: +form.odometer || 0 }]);
-    setForm({ vehicleId: '', liters: '', cost: '', date: today, odometer: '' });
-    setFormErr(''); setShowForm(false);
+    try {
+      const res = await axios.post(`${API_URL}/fuel`, {
+        ...form,
+        vehicleId: +form.vehicleId,
+        liters: +form.liters,
+        cost: +form.cost,
+        odometer: +form.odometer || 0
+      });
+      if (res.data.success) {
+        setForm({ vehicleId: '', liters: '', cost: '', date: today, odometer: '' });
+        setFormErr('');
+        setShowForm(false);
+        reloadData();
+      }
+    } catch (err: any) {
+      setFormErr(err.response?.data?.errors?.[0] || 'Failed to save fuel log.');
+    }
   };
 
   const total = fuelLogs.reduce((s: number, f: FuelLog) => s + f.cost, 0);
@@ -841,7 +1116,7 @@ function FuelView({ fuelLogs, setFuelLogs, vehicles }: any) {
                     <td>{f.liters} L</td>
                     <td>{fmtCurrency(f.cost)}</td>
                     <td>{fmtNum(f.odometer)} km</td>
-                    <td>{(f.cost / f.liters).toFixed(2)}</td>
+                    <td>{f.liters > 0 ? (f.cost / f.liters).toFixed(2) : '-'}</td>
                   </tr>
                 );
               })}
@@ -853,20 +1128,32 @@ function FuelView({ fuelLogs, setFuelLogs, vehicles }: any) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// EXPENSES VIEW
-// ════════════════════════════════════════════════════════════════
-function ExpensesView({ expenses, setExpenses, vehicles }: any) {
+function ExpensesView({ expenses, reloadData, vehicles, isAuthorized, showAlert }: any) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ vehicleId: '', type: 'Toll', amount: '', date: today, notes: '' });
   const [formErr, setFormErr] = useState('');
 
-  const addExpense = () => {
+  const addExpense = async () => {
+    if (!isAuthorized('manage_expenses')) {
+      showAlert('Access Denied: Only Financial Analysts, Fleet Managers, or Admins can log expenses.');
+      return;
+    }
     if (!form.vehicleId || !form.amount) { setFormErr('Vehicle and Amount are required.'); return; }
-    const id = Math.max(0, ...expenses.map((e: Expense) => e.id)) + 1;
-    setExpenses((cur: Expense[]) => [...cur, { id, vehicleId: +form.vehicleId, type: form.type, amount: +form.amount, date: form.date || today, notes: form.notes }]);
-    setForm({ vehicleId: '', type: 'Toll', amount: '', date: today, notes: '' });
-    setFormErr(''); setShowForm(false);
+    try {
+      const res = await axios.post(`${API_URL}/expenses`, {
+        ...form,
+        vehicleId: +form.vehicleId,
+        amount: +form.amount
+      });
+      if (res.data.success) {
+        setForm({ vehicleId: '', type: 'Toll', amount: '', date: today, notes: '' });
+        setFormErr('');
+        setShowForm(false);
+        reloadData();
+      }
+    } catch (err: any) {
+      setFormErr(err.response?.data?.errors?.[0] || 'Failed to save expense.');
+    }
   };
 
   const total = expenses.reduce((s: number, e: Expense) => s + e.amount, 0);
@@ -932,9 +1219,6 @@ function ExpensesView({ expenses, setExpenses, vehicles }: any) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// REPORTS VIEW
-// ════════════════════════════════════════════════════════════════
 function ReportsView({ vehicles, trips, fuelLogs, maintenances, expenses }: any) {
   const totalFuelCost = fuelLogs.reduce((s: number, f: FuelLog) => s + f.cost, 0);
   const totalMaintCost = maintenances.reduce((s: number, m: Maintenance) => s + m.cost, 0);
@@ -985,7 +1269,6 @@ function ReportsView({ vehicles, trips, fuelLogs, maintenances, expenses }: any)
         <button className="primary" onClick={exportCSV}>⬇ Export Full Report (CSV)</button>
       </div>
 
-      {/* Operational Cost Summary */}
       <div className="db-kpi-grid" style={{ marginBottom: '1.5rem' }}>
         <StatCard label="Fuel Cost" value={fmtCurrency(totalFuelCost)} sub="total fuel spend" accent="#2563eb" />
         <StatCard label="Maintenance Cost" value={fmtCurrency(totalMaintCost)} sub="total maintenance" accent="#d97706" />
@@ -997,7 +1280,6 @@ function ReportsView({ vehicles, trips, fuelLogs, maintenances, expenses }: any)
         <StatCard label="Total Distance" value={`${fmtNum(totalDistanceByTrip)} km`} sub="completed trip distance" accent="#475569" />
       </div>
 
-      {/* Operational Cost bar chart (CSS) */}
       <div className="panel" style={{ marginBottom: '1.5rem' }}>
         <div className="panel-header"><h3>Cost Breakdown</h3></div>
         <div className="db-util-bars">
@@ -1017,7 +1299,6 @@ function ReportsView({ vehicles, trips, fuelLogs, maintenances, expenses }: any)
         </div>
       </div>
 
-      {/* Vehicle ROI Table */}
       <div className="panel">
         <div className="panel-header"><h3>Vehicle ROI Analysis</h3><small style={{ color: '#94a3b8', fontSize: '0.78rem' }}>ROI = (Revenue − Fuel − Maintenance) / Acquisition Cost × 100</small></div>
         <div className="table-wrap">

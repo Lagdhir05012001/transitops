@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Truck } from 'lucide-react';
 
-// Demo credentials — no backend needed for local preview
+const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+
 const DEMO_USERS = [
   { email: 'admin@transitops.com', password: 'password', role: 'Admin', name: 'Admin User' },
   { email: 'fleet@transitops.com', password: 'password', role: 'Fleet Manager', name: 'Fleet Manager' },
   { email: 'dispatch@transitops.com', password: 'password', role: 'Dispatcher', name: 'Dispatcher' },
+  { email: 'safety@transitops.com', password: 'password', role: 'Safety Officer', name: 'Safety Officer' },
+  { email: 'finance@transitops.com', password: 'password', role: 'Financial Analyst', name: 'Financial Analyst' },
 ];
 
 export default function Login() {
@@ -20,20 +25,28 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Simulate API delay
-    await new Promise((r) => setTimeout(r, 600));
-
-    const user = DEMO_USERS.find(
-      (u) => u.email === email && u.password === password
-    );
-
-    if (user) {
-      localStorage.setItem('transitops_user', JSON.stringify(user));
-      navigate('/dashboard');
-    } else {
-      setError('Invalid email or password. Use a demo credential below.');
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      if (response.data.success) {
+        const { accessToken, user } = response.data.data;
+        // Map backend roles string to role property expected by frontend
+        const mappedUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.roles // Maps 'Admin', 'Fleet Manager', etc.
+        };
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('transitops_user', JSON.stringify(mappedUser));
+        navigate('/dashboard');
+      } else {
+        setError(response.data.errors?.[0] || 'Login failed.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.errors?.[0] || 'Unable to connect to login server.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fillDemo = (u: (typeof DEMO_USERS)[0]) => {
@@ -48,7 +61,7 @@ export default function Login() {
       <div className="login-left">
         <div className="login-left-inner">
           <div className="login-brand">
-            <span className="login-logo">🚛</span>
+            <Truck className="login-logo-icon" size={24} style={{ color: 'var(--primary)' }} />
             <span className="login-brand-name">TransitOps</span>
           </div>
           <h2 className="login-tagline">
