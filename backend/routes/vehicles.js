@@ -4,7 +4,7 @@ const { authMiddleware, checkRole } = require('../middleware/auth');
 const router = express.Router();
 
 // GET all vehicles
-router.get('/', authMiddleware, checkRole(['Admin', 'Fleet Manager', 'Dispatcher', 'Financial Analyst']), (req, res) => {
+router.get('/', authMiddleware, checkRole(['Admin', 'Fleet Manager', 'Dispatcher', 'Financial Analyst', 'Safety Officer']), (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM vehicles').all();
     res.json({ success: true, data: rows });
@@ -15,10 +15,10 @@ router.get('/', authMiddleware, checkRole(['Admin', 'Fleet Manager', 'Dispatcher
 
 // POST new vehicle
 router.post('/', authMiddleware, checkRole(['Admin', 'Fleet Manager']), (req, res) => {
-  const { registration, name, model, type, capacity, odometer, cost, status } = req.body;
+  const { registration, name, model, type, capacity, odometer, cost, status, region } = req.body;
   try {
     const info = db.prepare(
-      'INSERT INTO vehicles (registration, name, model, type, capacity, odometer, cost, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO vehicles (registration, name, model, type, capacity, odometer, cost, status, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(
       registration,
       name,
@@ -27,7 +27,8 @@ router.post('/', authMiddleware, checkRole(['Admin', 'Fleet Manager']), (req, re
       capacity || 0,
       odometer || 0,
       cost || 0,
-      status || 'Available'
+      status || 'Available',
+      region || 'North'
     );
     const v = db.prepare('SELECT * FROM vehicles WHERE id = ?').get(info.lastInsertRowid);
     res.json({ success: true, data: v });

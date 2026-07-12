@@ -4,7 +4,7 @@ const { authMiddleware, checkRole } = require('../middleware/auth');
 const router = express.Router();
 
 // GET all trips
-router.get('/', authMiddleware, checkRole(['Admin', 'Dispatcher', 'Fleet Manager', 'Financial Analyst']), (req, res) => {
+router.get('/', authMiddleware, checkRole(['Admin', 'Dispatcher', 'Fleet Manager', 'Financial Analyst', 'Safety Officer']), (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM trips').all();
     res.json({ success: true, data: rows });
@@ -17,6 +17,36 @@ router.get('/', authMiddleware, checkRole(['Admin', 'Dispatcher', 'Fleet Manager
 router.post('/', authMiddleware, checkRole(['Admin', 'Dispatcher']), (req, res) => {
   const { source, destination, vehicleId, driverId, cargoWeight, distance } = req.body;
   try {
+    const vehicle = vehicleId ? db.prepare('SELECT * FROM vehicles WHERE id = ?').get(vehicleId) : null;
+    const driver = driverId ? db.prepare('SELECT * FROM drivers WHERE id = ?').get(driverId) : null;
+
+    if (vehicle) {
+      if (vehicle.status === 'On Trip') {
+        return res.status(400).json({ success: false, errors: ['Selected vehicle is already On Trip.'] });
+      }
+      if (vehicle.status === 'In Shop') {
+        return res.status(400).json({ success: false, errors: ['Selected vehicle is In Shop (under maintenance).'] });
+      }
+      if (vehicle.status === 'Retired') {
+        return res.status(400).json({ success: false, errors: ['Selected vehicle is Retired.'] });
+      }
+      if (cargoWeight && +cargoWeight > vehicle.capacity) {
+        return res.status(400).json({ success: false, errors: [`Cargo weight (${cargoWeight} kg) exceeds vehicle capacity (${vehicle.capacity} kg).`] });
+      }
+    }
+
+    if (driver) {
+      if (driver.status === 'On Trip') {
+        return res.status(400).json({ success: false, errors: ['Selected driver is already On Trip.'] });
+      }
+      if (driver.status === 'Suspended') {
+        return res.status(400).json({ success: false, errors: ['Selected driver is Suspended.'] });
+      }
+      if (driver.licenseExpiry && new Date(driver.licenseExpiry) < new Date()) {
+        return res.status(400).json({ success: false, errors: ['Selected driver driving license has expired.'] });
+      }
+    }
+
     const info = db.prepare(
       'INSERT INTO trips (source, destination, vehicleId, driverId, cargoWeight, distance, status, fuelUsed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(
@@ -38,7 +68,6 @@ router.post('/', authMiddleware, checkRole(['Admin', 'Dispatcher']), (req, res) 
 
 // POST dispatch
 router.post('/:id/dispatch', authMiddleware, checkRole(['Admin', 'Dispatcher']), (req, res) => {
-
   const tripId = req.params.id;
   const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(tripId);
   if (!trip) return res.status(404).json({ success: false, errors: ['trip not found'] });
@@ -49,14 +78,31 @@ router.post('/:id/dispatch', authMiddleware, checkRole(['Admin', 'Dispatcher']),
   const vehicle = vehicleId ? db.prepare('SELECT * FROM vehicles WHERE id = ?').get(vehicleId) : null;
   const driver = driverId ? db.prepare('SELECT * FROM drivers WHERE id = ?').get(driverId) : null;
 
-  if (vehicle && (vehicle.status === 'In Shop' || vehicle.status === 'Retired')) {
-    return res.status(400).json({ success: false, errors: ['vehicle not available'] });
+  if (vehicle) {
+    if (vehicle.status === 'On Trip') {
+      return res.status(400).json({ success: false, errors: ['Selected vehicle is already On Trip.'] });
+    }
+    if (vehicle.status === 'In Shop') {
+      return res.status(400).json({ success: false, errors: ['Selected vehicle is In Shop (under maintenance).'] });
+    }
+    if (vehicle.status === 'Retired') {
+      return res.status(400).json({ success: false, errors: ['Selected vehicle is Retired.'] });
+    }
+    if (trip.cargoWeight > vehicle.capacity) {
+      return res.status(400).json({ success: false, errors: [`Cargo weight (${trip.cargoWeight} kg) exceeds vehicle capacity (${vehicle.capacity} kg).`] });
+    }
   }
-  if (driver && driver.status === 'Suspended') {
-    return res.status(400).json({ success: false, errors: ['driver suspended'] });
-  }
-  if (vehicle && trip.cargoWeight > vehicle.capacity) {
-    return res.status(400).json({ success: false, errors: ['cargo weight exceeds capacity'] });
+
+  if (driver) {
+    if (driver.status === 'On Trip') {
+      return res.status(400).json({ success: false, errors: ['Selected driver is already On Trip.'] });
+    }
+    if (driver.status === 'Suspended') {
+      return res.status(400).json({ success: false, errors: ['Selected driver is Suspended.'] });
+    }
+    if (driver.licenseExpiry && new Date(driver.licenseExpiry) < new Date()) {
+      return res.status(400).json({ success: false, errors: ['Selected driver driving license has expired.'] });
+    }
   }
 
   const tx = db.transaction(() => {
