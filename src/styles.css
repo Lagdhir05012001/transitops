@@ -1450,6 +1450,18 @@ tr:last-child td {
 }
 .db-search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
 .db-search-input::placeholder { color: var(--text-muted); }
+.db-search-bar select {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+.db-search-bar select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
 
 /* ── KPI grid ── */
 .db-kpi-grid {

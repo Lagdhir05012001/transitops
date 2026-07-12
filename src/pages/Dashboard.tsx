@@ -26,7 +26,7 @@ type MaintenanceStatus = 'Open' | 'Closed';
 interface Vehicle {
   id: number; registration: string; name: string; model: string;
   type: 'Van' | 'Bus' | 'Truck'; capacity: number; odometer: number;
-  cost: number; status: VehicleStatus;
+  cost: number; status: VehicleStatus; region: string;
 }
 interface Driver {
   id: number; name: string; licenseNumber: string; licenseCategory: string;
@@ -102,6 +102,12 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [alert, setAlert] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Dashboard Filters State
+  const [filterType, setFilterType] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterRegion, setFilterRegion] = useState('All');
+
   const [kpisState, setKpisState] = useState<any>({
     totalV: 0,
     activeV: 0,
@@ -145,9 +151,12 @@ export default function Dashboard() {
       const token = localStorage.getItem('accessToken');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch dashboard KPIs (always allowed for authenticated users)
+      // Fetch dashboard KPIs with filters
       try {
-        const kpisRes = await axios.get(`${API_URL}/dashboard/kpis`, { headers });
+        const kpisRes = await axios.get(`${API_URL}/dashboard/kpis`, {
+          headers,
+          params: { type: filterType, status: filterStatus, region: filterRegion }
+        });
         if (kpisRes.data.success) {
           setKpisState(kpisRes.data.data);
         }
@@ -159,9 +168,9 @@ export default function Dashboard() {
       const promises: Promise<any>[] = [];
       const keys: string[] = [];
 
-      const shouldFetchVehicles = role === 'Admin' || role === 'Fleet Manager' || role === 'Dispatcher' || role === 'Financial Analyst';
+      const shouldFetchVehicles = true;
       const shouldFetchDrivers = role === 'Admin' || role === 'Safety Officer' || role === 'Dispatcher';
-      const shouldFetchTrips = role === 'Admin' || role === 'Dispatcher' || role === 'Financial Analyst';
+      const shouldFetchTrips = true;
       const shouldFetchMaintenance = role === 'Admin' || role === 'Fleet Manager' || role === 'Financial Analyst';
       const shouldFetchFuel = role === 'Admin' || role === 'Fleet Manager' || role === 'Dispatcher' || role === 'Financial Analyst';
       const shouldFetchExpenses = role === 'Admin' || role === 'Financial Analyst' || role === 'Fleet Manager';
@@ -212,7 +221,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [section]);
+  }, [section, filterType, filterStatus, filterRegion]);
 
   // ── Business Rule Actions ────────────────────────────────────
   const dispatchTrip = async (tripId: number) => {
@@ -385,6 +394,12 @@ export default function Dashboard() {
                   maintenances={maintenances}
                   expenses={expenses}
                   user={user}
+                  filterType={filterType}
+                  setFilterType={setFilterType}
+                  filterStatus={filterStatus}
+                  setFilterStatus={setFilterStatus}
+                  filterRegion={filterRegion}
+                  setFilterRegion={setFilterRegion}
                 />
               )}
               {section === 'vehicles' && <VehiclesView vehicles={vehicles} reloadData={fetchData} isAuthorized={isAuthorized} showAlert={showAlert} />}
@@ -403,14 +418,61 @@ export default function Dashboard() {
 }
 
 // ── Views ──
-function DashboardView({ kpi, trips, drivers, maintenances, expenses, user }: any) {
-  const activeTrips = trips.filter((t: Trip) => t.status === 'Dispatched');
-  const recentMaint = maintenances.filter((m: Maintenance) => m.status === 'Open');
-  const expiringDrivers = drivers.filter((d: Driver) => {
-    const days = Math.floor((new Date(d.licenseExpiry).getTime() - Date.now()) / 86400000);
-    return days >= 0 && days <= 90;
-  });
-  const recentExpenses = (expenses || []).slice(-5).reverse();
+function DashboardView({
+  kpi,
+  vehicles,
+  trips,
+  drivers,
+  maintenances,
+  expenses,
+  user,
+  filterType,
+  setFilterType,
+  filterStatus,
+  setFilterStatus,
+  filterRegion,
+  setFilterRegion
+}: any) {
+  // Identify the set of vehicle IDs matching the selected filters
+  const filteredVehicleIds = useMemo(() => {
+    const ids = vehicles
+      .filter((v: Vehicle) => {
+        const typeOk = filterType === 'All' || v.type === filterType;
+        const statusOk = filterStatus === 'All' || v.status === filterStatus;
+        const regionOk = filterRegion === 'All' || v.region === filterRegion;
+        return typeOk && statusOk && regionOk;
+      })
+      .map((v: Vehicle) => v.id);
+    return new Set(ids);
+  }, [vehicles, filterType, filterStatus, filterRegion]);
+
+  const regions = useMemo(() => {
+    const list = vehicles.map((v: Vehicle) => v.region).filter(Boolean);
+    return Array.from(new Set(list)) as string[];
+  }, [vehicles]);
+
+  const activeTrips = trips.filter((t: Trip) => t.status === 'Dispatched' && filteredVehicleIds.has(t.vehicleId));
+  const recentMaint = maintenances.filter((m: Maintenance) => m.status === 'Open' && filteredVehicleIds.has(m.vehicleId));
+  
+  const expiringDrivers = useMemo(() => {
+    const baseExpiring = drivers.filter((d: Driver) => {
+      const days = Math.floor((new Date(d.licenseExpiry).getTime() - Date.now()) / 86400000);
+      return days >= 0 && days <= 90;
+    });
+
+    if (filterType !== 'All' || filterStatus !== 'All' || filterRegion !== 'All') {
+      return baseExpiring.filter((d: Driver) => {
+        const driverTrips = trips.filter((t: Trip) => t.driverId === d.id);
+        return driverTrips.some((t: Trip) => filteredVehicleIds.has(t.vehicleId));
+      });
+    }
+    return baseExpiring;
+  }, [drivers, trips, filteredVehicleIds, filterType, filterStatus, filterRegion]);
+
+  const recentExpenses = (expenses || [])
+    .filter((e: Expense) => filteredVehicleIds.has(e.vehicleId))
+    .slice(-5)
+    .reverse();
 
   const showVehiclesKPI = user.role === 'Admin' || user.role === 'Fleet Manager' || user.role === 'Financial Analyst' || user.role === 'Dispatcher';
   const showTripsKPI = user.role === 'Admin' || user.role === 'Dispatcher' || user.role === 'Fleet Manager' || user.role === 'Financial Analyst';
@@ -428,6 +490,40 @@ function DashboardView({ kpi, trips, drivers, maintenances, expenses, user }: an
           <span>RBAC Active</span>
           <span>Role: {user.role}</span>
           <span>SQLite Database</span>
+        </div>
+      </div>
+
+      {/* Dashboard Filters Row */}
+      <div className="db-section-header" style={{ marginBottom: '1.5rem', background: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+        <div className="db-search-bar" style={{ gap: '1.5rem', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 200px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filter by Vehicle Type</label>
+            <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: '100%' }}>
+              <option value="All">All Types</option>
+              <option value="Van">Van</option>
+              <option value="Bus">Bus</option>
+              <option value="Truck">Truck</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 200px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filter by Vehicle Status</label>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: '100%' }}>
+              <option value="All">All Statuses</option>
+              <option value="Available">Available</option>
+              <option value="On Trip">On Trip</option>
+              <option value="In Shop">In Shop</option>
+              <option value="Retired">Retired</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 200px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filter by Region</label>
+            <select value={filterRegion} onChange={e => setFilterRegion(e.target.value)} style={{ width: '100%' }}>
+              <option value="All">All Regions</option>
+              {regions.map((r: string) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -562,7 +658,7 @@ function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
   const [typeFilter, setTypeFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '' });
+  const [form, setForm] = useState({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '', region: 'North' });
   const [formErr, setFormErr] = useState('');
 
   const filtered = useMemo(() => vehicles.filter((v: Vehicle) => {
@@ -586,7 +682,7 @@ function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
         cost: +form.cost || 0
       });
       if (res.data.success) {
-        setForm({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '' });
+        setForm({ registration: '', name: '', model: '', type: 'Van', capacity: '', odometer: '', cost: '', region: 'North' });
         setFormErr('');
         setShowForm(false);
         reloadData();
@@ -649,6 +745,7 @@ function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
             <div className="db-field"><label>Model</label><input value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} /></div>
             <div className="db-field"><label>Type</label><select value={form.type} onChange={e => setForm({ ...form, type: e.target.value as any })}><option>Van</option><option>Bus</option><option>Truck</option></select></div>
             <div className="db-field"><label>Max Capacity (kg) *</label><input type="number" value={form.capacity} onChange={e => setForm({ ...form, capacity: e.target.value })} /></div>
+            <div className="db-field"><label>Region *</label><select value={form.region} onChange={e => setForm({ ...form, region: e.target.value })}><option>North</option><option>South</option><option>East</option><option>West</option></select></div>
             <div className="db-field"><label>Odometer (km)</label><input type="number" value={form.odometer} onChange={e => setForm({ ...form, odometer: e.target.value })} /></div>
             <div className="db-field"><label>Acquisition Cost ($)</label><input type="number" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>
           </div>
@@ -660,13 +757,14 @@ function VehiclesView({ vehicles, reloadData, isAuthorized, showAlert }: any) {
         <div className="panel-header"><h3>Vehicle Registry ({filtered.length})</h3></div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Registration</th><th>Vehicle</th><th>Type</th><th>Capacity</th><th>Odometer</th><th>Acq. Cost</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Registration</th><th>Vehicle</th><th>Type</th><th>Region</th><th>Capacity</th><th>Odometer</th><th>Acq. Cost</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {filtered.map((v: Vehicle) => (
                 <tr key={v.id}>
                   <td><strong>{v.registration}</strong></td>
                   <td>{v.name}<br /><small style={{ color: '#94a3b8' }}>{v.model}</small></td>
                   <td>{v.type}</td>
+                  <td>{v.region || 'North'}</td>
                   <td>{fmtNum(v.capacity)} kg</td>
                   <td>{fmtNum(v.odometer)} km</td>
                   <td>{fmtCurrency(v.cost)}</td>

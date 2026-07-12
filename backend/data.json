@@ -51,7 +51,8 @@
       "capacity": 500,
       "odometer": 12000,
       "cost": 45000,
-      "status": "Available"
+      "status": "Retired",
+      "region": "North"
     },
     {
       "id": 2,
@@ -60,9 +61,10 @@
       "model": "Aero 160",
       "type": "Bus",
       "capacity": 1200,
-      "odometer": 35000,
+      "odometer": 35500,
       "cost": 98000,
-      "status": "Available"
+      "status": "Available",
+      "region": "South"
     },
     {
       "id": 3,
@@ -73,7 +75,8 @@
       "capacity": 1500,
       "odometer": 28000,
       "cost": 112000,
-      "status": "In Shop"
+      "status": "Retired",
+      "region": "East"
     },
     {
       "id": 4,
@@ -84,7 +87,44 @@
       "capacity": 600,
       "odometer": 8400,
       "cost": 52000,
-      "status": "Available"
+      "status": "Retired",
+      "region": "West"
+    },
+    {
+      "id": 5,
+      "registration": "Van-055",
+      "name": "City Van",
+      "model": "Sprinter 315",
+      "type": "Van",
+      "capacity": 500,
+      "odometer": 12000,
+      "cost": 4500,
+      "status": "Retired",
+      "region": "South"
+    },
+    {
+      "id": 6,
+      "registration": "kk-420",
+      "name": "Omani Van",
+      "model": "ABC",
+      "type": "Van",
+      "capacity": 10000,
+      "odometer": 500,
+      "cost": 50,
+      "status": "Available",
+      "region": "North"
+    },
+    {
+      "id": 7,
+      "registration": "KR-007",
+      "name": "BULLET",
+      "model": "650",
+      "type": "Truck",
+      "capacity": 500,
+      "odometer": 73,
+      "cost": 200000,
+      "status": "In Shop",
+      "region": "North"
     }
   ],
   "drivers": [
@@ -106,7 +146,7 @@
       "licenseExpiry": "2026-10-01",
       "contact": "+1 555 0102",
       "safetyScore": 88,
-      "status": "Available"
+      "status": "Suspended"
     },
     {
       "id": 3,
@@ -126,6 +166,16 @@
       "licenseExpiry": "2027-12-20",
       "contact": "+1 555 0104",
       "safetyScore": 95,
+      "status": "Available"
+    },
+    {
+      "id": 5,
+      "name": "Krunal Rana",
+      "licenseNumber": "B2-007",
+      "licenseCategory": "B",
+      "licenseExpiry": "2027-02-02",
+      "contact": "9824085934",
+      "safetyScore": 100,
       "status": "Available"
     }
   ],
@@ -149,8 +199,80 @@
       "driverId": 2,
       "cargoWeight": 800,
       "distance": 220,
-      "status": "Draft",
+      "status": "Cancelled",
       "fuelUsed": 0
+    },
+    {
+      "id": 3,
+      "source": "vaso",
+      "destination": "nadiad",
+      "vehicleId": 2,
+      "driverId": 1,
+      "cargoWeight": 500,
+      "distance": 500,
+      "status": "Completed",
+      "fuelUsed": 500,
+      "createdAt": "2026-07-12T09:44:58.450Z"
+    },
+    {
+      "id": 4,
+      "source": "Vaso",
+      "destination": "Deva",
+      "vehicleId": 2,
+      "driverId": 4,
+      "cargoWeight": 500,
+      "distance": 8,
+      "status": "Cancelled",
+      "fuelUsed": 0,
+      "createdAt": "2026-07-12T09:48:38.039Z"
+    },
+    {
+      "id": 5,
+      "source": "vaso",
+      "destination": "deva",
+      "vehicleId": 2,
+      "driverId": 4,
+      "cargoWeight": 500,
+      "distance": 550,
+      "status": "Cancelled",
+      "fuelUsed": 0,
+      "createdAt": "2026-07-12T09:49:29.365Z"
+    },
+    {
+      "id": 6,
+      "source": "BMC",
+      "destination": "AMC",
+      "vehicleId": 2,
+      "driverId": 1,
+      "cargoWeight": 500,
+      "distance": 500,
+      "status": "Completed",
+      "fuelUsed": 5000,
+      "createdAt": "2026-07-12T09:59:01.015Z"
+    },
+    {
+      "id": 7,
+      "source": "vaso",
+      "destination": "nadiad",
+      "vehicleId": 6,
+      "driverId": 4,
+      "cargoWeight": 555,
+      "distance": 500,
+      "status": "Cancelled",
+      "fuelUsed": 0,
+      "createdAt": "2026-07-12T10:01:32.431Z"
+    },
+    {
+      "id": 8,
+      "source": "Vaso",
+      "destination": "Odoo Office ",
+      "vehicleId": 7,
+      "driverId": 5,
+      "cargoWeight": 450,
+      "distance": 58,
+      "status": "Completed",
+      "fuelUsed": 450,
+      "createdAt": "2026-07-12T10:07:43.954Z"
     }
   ],
   "maintenance": [
@@ -171,6 +293,258 @@
       "cost": 80,
       "date": "2026-06-20",
       "status": "Closed"
+    },
+    {
+      "id": 3,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 4,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 5,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 6,
+      "vehicleId": 4,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 7,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 8,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 9,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 10,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 11,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 12,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 13,
+      "vehicleId": 2,
+      "type": "Oil Change",
+      "description": "chage oil ",
+      "cost": 500,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 14,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 15,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 16,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 17,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 18,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 19,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 20,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 21,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 22,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 23,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 24,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 25,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 26,
+      "vehicleId": 6,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 27,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 28,
+      "vehicleId": 2,
+      "type": "Tire Replacement",
+      "description": "5",
+      "cost": 1,
+      "date": "2026-07-12",
+      "status": "Open"
+    },
+    {
+      "id": 29,
+      "vehicleId": 2,
+      "type": "Unscheduled",
+      "description": "Manual maintenance entry",
+      "cost": 0,
+      "date": "2026-07-12",
+      "status": "Closed"
+    },
+    {
+      "id": 30,
+      "vehicleId": 7,
+      "type": "Oil Change",
+      "description": "RE Oil",
+      "cost": 15,
+      "date": "2026-07-12",
+      "status": "Open"
     }
   ],
   "fuel_logs": [
@@ -197,6 +571,30 @@
       "cost": 68,
       "date": "2026-07-08",
       "odometer": 8200
+    },
+    {
+      "id": 4,
+      "vehicleId": 2,
+      "liters": 500,
+      "cost": 850,
+      "date": "2026-07-12",
+      "odometer": 0
+    },
+    {
+      "id": 5,
+      "vehicleId": 2,
+      "liters": 5000,
+      "cost": 8500,
+      "date": "2026-07-12",
+      "odometer": 0
+    },
+    {
+      "id": 6,
+      "vehicleId": 7,
+      "liters": 450,
+      "cost": 765,
+      "date": "2026-07-12",
+      "odometer": 0
     }
   ],
   "expenses": [

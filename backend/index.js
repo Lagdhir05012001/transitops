@@ -30,15 +30,41 @@ app.use('/expenses', expensesRoutes);
 // Detailed dashboard KPIs from SQLite
 app.get('/dashboard/kpis', authMiddleware, (req, res) => {
   try {
-    const totalV = db.prepare("SELECT COUNT(*) as c FROM vehicles").get().c;
-    const availV = db.prepare("SELECT COUNT(*) as c FROM vehicles WHERE status = 'Available'").get().c;
-    const inShopV = db.prepare("SELECT COUNT(*) as c FROM vehicles WHERE status = 'In Shop'").get().c;
-    const retiredV = db.prepare("SELECT COUNT(*) as c FROM vehicles WHERE status = 'Retired'").get().c;
-    const activeTrips = db.prepare("SELECT COUNT(*) as c FROM trips WHERE status = 'Dispatched'").get().c;
-    const pendingTrips = db.prepare("SELECT COUNT(*) as c FROM trips WHERE status = 'Draft'").get().c;
-    const driversOnDuty = db.prepare("SELECT COUNT(*) as c FROM drivers WHERE status = 'On Trip'").get().c;
-    
-    const activeV = db.prepare("SELECT COUNT(*) as c FROM vehicles WHERE status != 'Retired'").get().c;
+    const { type, status, region } = req.query;
+
+    let vehicles = db.prepare("SELECT * FROM vehicles").all();
+    let trips = db.prepare("SELECT * FROM trips").all();
+    let drivers = db.prepare("SELECT * FROM drivers").all();
+
+    // Apply filters
+    if (type && type !== 'All') {
+      vehicles = vehicles.filter(v => v.type === type);
+    }
+    if (status && status !== 'All') {
+      vehicles = vehicles.filter(v => v.status === status);
+    }
+    if (region && region !== 'All') {
+      vehicles = vehicles.filter(v => v.region === region);
+    }
+
+    const vehicleIds = new Set(vehicles.map(v => v.id));
+
+    const totalV = vehicles.length;
+    const availV = vehicles.filter(v => v.status === 'Available').length;
+    const inShopV = vehicles.filter(v => v.status === 'In Shop').length;
+    const retiredV = vehicles.filter(v => v.status === 'Retired').length;
+
+    // Filter trips associated with the selected set of vehicles
+    const activeTrips = trips.filter(t => t.status === 'Dispatched' && vehicleIds.has(t.vehicleId)).length;
+    const pendingTrips = trips.filter(t => t.status === 'Draft' && vehicleIds.has(t.vehicleId)).length;
+
+    // Filter drivers associated with the active trips of the selected set of vehicles
+    const activeTripDrivers = new Set(
+      trips.filter(t => t.status === 'Dispatched' && vehicleIds.has(t.vehicleId)).map(t => t.driverId)
+    );
+    const driversOnDuty = drivers.filter(d => d.status === 'On Trip' && activeTripDrivers.has(d.id)).length;
+
+    const activeV = vehicles.filter(v => v.status !== 'Retired').length;
     const utilization = totalV > 0 ? Math.round((activeV / totalV) * 100) : 0;
 
     res.json({

@@ -68,10 +68,10 @@ usersToSeed.forEach(u => {
 // Seed initial vehicles if empty
 if (data.vehicles.length === 0) {
   data.vehicles.push(
-    { id: 1, registration: 'Van-05', name: 'City Van', model: 'Sprinter 315', type: 'Van', capacity: 500, odometer: 12000, cost: 45000, status: 'Available' },
-    { id: 2, registration: 'Bus-12', name: 'Metro Bus', model: 'Aero 160', type: 'Bus', capacity: 1200, odometer: 35000, cost: 98000, status: 'Available' },
-    { id: 3, registration: 'Truck-07', name: 'Cargo Truck', model: 'Pro 700T', type: 'Truck', capacity: 1500, odometer: 28000, cost: 112000, status: 'In Shop' },
-    { id: 4, registration: 'Van-09', name: 'Express Van', model: 'Transit L3', type: 'Van', capacity: 600, odometer: 8400, cost: 52000, status: 'Available' }
+    { id: 1, registration: 'Van-05', name: 'City Van', model: 'Sprinter 315', type: 'Van', capacity: 500, odometer: 12000, cost: 45000, status: 'Available', region: 'North' },
+    { id: 2, registration: 'Bus-12', name: 'Metro Bus', model: 'Aero 160', type: 'Bus', capacity: 1200, odometer: 35000, cost: 98000, status: 'Available', region: 'South' },
+    { id: 3, registration: 'Truck-07', name: 'Cargo Truck', model: 'Pro 700T', type: 'Truck', capacity: 1500, odometer: 28000, cost: 112000, status: 'In Shop', region: 'East' },
+    { id: 4, registration: 'Van-09', name: 'Express Van', model: 'Transit L3', type: 'Van', capacity: 600, odometer: 8400, cost: 52000, status: 'Available', region: 'West' }
   );
 }
 
@@ -120,6 +120,19 @@ if (data.expenses.length === 0) {
 }
 
 saveData(data);
+
+// Ensure all existing vehicles have a region field
+let dataChanged = false;
+data.vehicles.forEach((v, index) => {
+  if (!v.region) {
+    const regions = ['North', 'South', 'East', 'West'];
+    v.region = regions[index % regions.length];
+    dataChanged = true;
+  }
+});
+if (dataChanged) {
+  saveData(data);
+}
 
 // SQLite API Emulation using JS array/object manipulation
 class Statement {
@@ -210,7 +223,7 @@ class Statement {
     }
     // INSERT INTO vehicles
     else if (this.sql.includes('INSERT INTO vehicles')) {
-      const [registration, name, model, type, capacity, odometer, cost, status] = params;
+      const [registration, name, model, type, capacity, odometer, cost, status, region] = params;
       if (data.vehicles.some(v => v.registration === registration)) {
         throw new Error('UNIQUE constraint failed: vehicles.registration');
       }
@@ -224,7 +237,8 @@ class Statement {
         capacity,
         odometer: odometer || 0,
         cost: cost || 0,
-        status: status || 'Available'
+        status: status || 'Available',
+        region: region || 'North'
       });
     }
     // INSERT INTO drivers
@@ -299,35 +313,71 @@ class Statement {
         notes: notes || ''
       });
     }
-    // UPDATE vehicles SET status
-    else if (this.sql.includes('UPDATE vehicles SET status = ? WHERE id = ?')) {
+    // UPDATE vehicles SET status = 'On Trip' WHERE id = ?
+    else if (this.sql.includes("UPDATE vehicles SET status = 'On Trip' WHERE id = ?")) {
+      const [id] = params;
+      const v = data.vehicles.find(x => x.id === +id);
+      if (v) v.status = 'On Trip';
+    }
+    // UPDATE vehicles SET status = 'Available' WHERE id = ? AND status = 'In Shop'
+    else if (this.sql.includes("UPDATE vehicles SET status = 'Available' WHERE id = ? AND status = 'In Shop'")) {
+      const [id] = params;
+      const v = data.vehicles.find(x => x.id === +id);
+      if (v && v.status !== 'Retired') v.status = 'Available';
+    }
+    // UPDATE vehicles SET status = 'Available' WHERE id = ?
+    else if (this.sql.includes("UPDATE vehicles SET status = 'Available' WHERE id = ?")) {
+      const [id] = params;
+      const v = data.vehicles.find(x => x.id === +id);
+      if (v && v.status !== 'Retired') v.status = 'Available';
+    }
+    // UPDATE vehicles SET status = 'In Shop' WHERE id = ?
+    else if (this.sql.includes("UPDATE vehicles SET status = 'In Shop' WHERE id = ?")) {
+      const [id] = params;
+      const v = data.vehicles.find(x => x.id === +id);
+      if (v) v.status = 'In Shop';
+    }
+    // UPDATE vehicles SET status = ? WHERE id = ?
+    else if (this.sql.includes("UPDATE vehicles SET status = ? WHERE id = ?")) {
       const [status, id] = params;
       const v = data.vehicles.find(x => x.id === +id);
       if (v) v.status = status;
     }
-    // UPDATE vehicles SET status, odometer
-    else if (this.sql.includes('UPDATE vehicles SET status = ?, odometer = odometer + ? WHERE id = ?')) {
-      const [status, distance, id] = params;
+    // UPDATE vehicles SET status = 'Available', odometer = odometer + ? WHERE id = ?
+    else if (this.sql.includes("UPDATE vehicles SET status = 'Available', odometer = odometer + ? WHERE id = ?")) {
+      const [distance, id] = params;
       const v = data.vehicles.find(x => x.id === +id);
       if (v) {
-        v.status = status;
+        if (v.status !== 'Retired') v.status = 'Available';
         v.odometer = (v.odometer || 0) + (distance || 0);
       }
     }
-    // UPDATE drivers SET status
-    else if (this.sql.includes('UPDATE drivers SET status = ? WHERE id = ?')) {
+    // UPDATE drivers SET status = 'On Trip' WHERE id = ?
+    else if (this.sql.includes("UPDATE drivers SET status = 'On Trip' WHERE id = ?")) {
+      const [id] = params;
+      const d = data.drivers.find(x => x.id === +id);
+      if (d) d.status = 'On Trip';
+    }
+    // UPDATE drivers SET status = 'Available' WHERE id = ?
+    else if (this.sql.includes("UPDATE drivers SET status = 'Available' WHERE id = ?")) {
+      const [id] = params;
+      const d = data.drivers.find(x => x.id === +id);
+      if (d) d.status = 'Available';
+    }
+    // UPDATE drivers SET status = ? WHERE id = ?
+    else if (this.sql.includes("UPDATE drivers SET status = ? WHERE id = ?")) {
       const [status, id] = params;
       const d = data.drivers.find(x => x.id === +id);
       if (d) d.status = status;
     }
-    // UPDATE trips SET status
-    else if (this.sql.includes('UPDATE trips SET status = ? WHERE id = ?')) {
+    // UPDATE trips SET status = ? WHERE id = ?
+    else if (this.sql.includes("UPDATE trips SET status = ? WHERE id = ?")) {
       const [status, id] = params;
       const t = data.trips.find(x => x.id === +id);
       if (t) t.status = status;
     }
     // UPDATE trips SET status, fuelUsed
-    else if (this.sql.includes('UPDATE trips SET status = ?, fuelUsed = ? WHERE id = ?')) {
+    else if (this.sql.includes("UPDATE trips SET status = ?, fuelUsed = ? WHERE id = ?")) {
       const [status, fuelUsed, id] = params;
       const t = data.trips.find(x => x.id === +id);
       if (t) {
@@ -335,8 +385,14 @@ class Statement {
         t.fuelUsed = fuelUsed;
       }
     }
-    // UPDATE maintenance SET status
-    else if (this.sql.includes('UPDATE maintenance SET status = ? WHERE id = ?')) {
+    // UPDATE maintenance SET status = 'Closed' WHERE id = ?
+    else if (this.sql.includes("UPDATE maintenance SET status = 'Closed' WHERE id = ?")) {
+      const [id] = params;
+      const m = data.maintenance.find(x => x.id === +id);
+      if (m) m.status = 'Closed';
+    }
+    // UPDATE maintenance SET status = ? WHERE id = ?
+    else if (this.sql.includes("UPDATE maintenance SET status = ? WHERE id = ?")) {
       const [status, id] = params;
       const m = data.maintenance.find(x => x.id === +id);
       if (m) m.status = status;

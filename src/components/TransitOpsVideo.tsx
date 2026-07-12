@@ -1,16 +1,15 @@
 import React from 'react';
-import { AbsoluteFill, useVideoConfig, useCurrentFrame, spring, interpolate } from 'remotion';
+import { AbsoluteFill, useVideoConfig, useCurrentFrame, spring, interpolate, Audio } from 'remotion';
 
 export function TransitOpsVideo() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Current Slide Calculation
   // Total duration: 480 frames (16 seconds at 30 fps)
-  // Slide 1: 0 to 120 (4s) - Intro
-  // Slide 2: 120 to 240 (4s) - RBAC Features
-  // Slide 3: 240 to 360 (4s) - Auto Rules
-  // Slide 4: 360 to 480 (4s) - Creators / LinkedIn
+  // Slide 1: 0 to 120 (4s) - Intro & High-Level KPIs
+  // Slide 2: 120 to 240 (4s) - Role-Based Dashboard Personalization
+  // Slide 3: 240 to 360 (4s) - Automated Verification Logic
+  // Slide 4: 360 to 480 (4s) - Meet the Creators (LinkedIn Profile Cards with Photos)
   const slideDuration = 120;
   const currentSlide = Math.floor(frame / slideDuration);
   const slideFrame = frame % slideDuration;
@@ -26,11 +25,11 @@ export function TransitOpsVideo() {
     });
   };
 
-  // Styles
+  // Base Slide Styles
   const slideStyle: React.CSSProperties = {
     fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    background: 'linear-gradient(145deg, #0f172a 0%, #1e1b4b 100%)',
-    color: '#f8fafc',
+    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+    color: '#0f172a',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -44,9 +43,9 @@ export function TransitOpsVideo() {
 
   const glowBackground: React.CSSProperties = {
     position: 'absolute',
-    width: '600px',
-    height: '600px',
-    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(0,0,0,0) 70%)',
+    width: '800px',
+    height: '800px',
+    background: 'radial-gradient(circle, rgba(37, 99, 235, 0.07) 0%, rgba(0,0,0,0) 70%)',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
@@ -57,130 +56,172 @@ export function TransitOpsVideo() {
   const buttonStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
-    padding: '12px 24px',
+    justifyContent: 'center',
+    padding: '8px 18px',
     background: 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)',
-    color: '#fff',
+    color: '#ffffff',
     textDecoration: 'none',
-    borderRadius: '30px',
-    fontSize: '18px',
+    borderRadius: '6px',
+    fontSize: '14px',
     fontWeight: 'bold',
-    boxShadow: '0 4px 15px rgba(0, 119, 181, 0.4)',
+    boxShadow: '0 4px 10px rgba(0, 119, 181, 0.25)',
     border: 'none',
     cursor: 'pointer',
-    marginTop: '10px',
-    transition: 'transform 0.2s',
+    marginTop: '12px',
+    transition: 'transform 0.15s ease',
   };
 
   const renderSlide = () => {
     if (currentSlide === 0) {
-      // SLIDE 1: INTRO
+      // SLIDE 1: INTRO & HIGH LEVEL PREVIEW
       const titleOpacity = interpolate(slideFrame, [0, 15], [0, 1]);
       const titleScale = spr(0.8, 1, 0);
       const subtitleOpacity = interpolate(slideFrame, [15, 30], [0, 1]);
       const subtitleY = spr(30, 0, 15);
-      const iconScale = spr(0, 1, 30);
+      const statsOpacity = interpolate(slideFrame, [35, 50], [0, 1]);
+      const statsScale = spr(0.9, 1, 35);
 
       return (
         <div style={slideStyle}>
           <div style={glowBackground} />
           <div style={{ zIndex: 1, padding: '0 40px' }}>
-            <div style={{ 
-              fontSize: '110px', 
-              transform: `scale(${iconScale})`, 
-              marginBottom: '20px',
-              display: 'inline-block'
-            }}>
-              🚛
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ fontSize: '72px' }}>🚛</div>
+              <h1 style={{
+                fontSize: '68px',
+                fontWeight: 900,
+                background: 'linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                opacity: titleOpacity,
+                transform: `scale(${titleScale})`,
+                margin: 0,
+                letterSpacing: '-2px',
+              }}>
+                TransitOps
+              </h1>
             </div>
-            <h1 style={{
-              fontSize: '64px',
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              opacity: titleOpacity,
-              transform: `scale(${titleScale})`,
-              margin: '0 0 15px 0',
-              letterSpacing: '-1.5px',
-            }}>
-              TransitOps
-            </h1>
+            
             <p style={{
-              fontSize: '28px',
-              color: '#94a3b8',
+              fontSize: '26px',
+              color: '#475569',
               opacity: subtitleOpacity,
               transform: `translateY(${subtitleY}px)`,
-              margin: 0,
-              fontWeight: 400,
+              margin: '0 0 45px 0',
+              fontWeight: 500,
             }}>
-              Smart Transport Operations Platform
+              Smart Transport Operations & Fleet Command Center
             </p>
+
+            {/* KPI Mockup Row */}
+            <div style={{
+              display: 'flex',
+              gap: '20px',
+              opacity: statsOpacity,
+              transform: `scale(${statsScale})`,
+              justifyContent: 'center',
+            }}>
+              {[
+                { label: 'Available Vehicles', val: '12', color: '#16a34a', bg: '#f0fdf4' },
+                { label: 'Active Trips', val: '5', color: '#2563eb', bg: '#eff6ff' },
+                { label: 'In Maintenance', val: '2', color: '#d97706', bg: '#fffbeb' },
+              ].map((k) => (
+                <div key={k.label} style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '16px 28px',
+                  width: '180px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.03)',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>{k.label}</div>
+                  <div style={{ fontSize: '36px', fontWeight: 800, color: k.color }}>{k.val}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       );
     }
 
     if (currentSlide === 1) {
-      // SLIDE 2: RBAC
+      // SLIDE 2: ROLE-BASED PERSONALIZATION
       const titleOpacity = interpolate(slideFrame, [0, 15], [0, 1]);
       const titleY = spr(-30, 0, 0);
-      const listOpacity = interpolate(slideFrame, [20, 35], [0, 1]);
-      const cardScale = spr(0.9, 1, 20);
+      const gridOpacity = interpolate(slideFrame, [20, 35], [0, 1]);
+      const gridScale = spr(0.92, 1, 20);
 
       const roles = [
-        { name: 'Admin', desc: 'Full configuration & system oversight' },
-        { name: 'Fleet Manager', desc: 'Vehicles lifecycle & maintenance logs' },
-        { name: 'Dispatcher', desc: 'Trip assignment & active monitoring' },
-        { name: 'Safety Officer', desc: 'Driver validation & compliance checking' },
-        { name: 'Financial Analyst', desc: 'Fuel logs, operational costs & ROI reviews' },
+        { name: 'Fleet Manager', icon: '🔧', color: '#d97706', desc: 'Monitors vehicle status registry, logs repairs, and manages active maintenance.' },
+        { name: 'Dispatcher', icon: '🗺️', color: '#2563eb', desc: 'Creates new transport trips and dispatches them adhering to load rules.' },
+        { name: 'Safety Officer', icon: '🛡️', color: '#0891b2', desc: 'Reviews driver compliance, driving license dates, and tracks safety scores.' },
+        { name: 'Financial Analyst', icon: '📈', color: '#059669', desc: 'Examines operational fuel logs, toll expenses, and calculates vehicle ROI.' },
       ];
 
       return (
         <div style={slideStyle}>
           <div style={glowBackground} />
-          <div style={{ zIndex: 1, width: '100%', maxWidth: '850px', padding: '0 40px' }}>
+          <div style={{ zIndex: 1, width: '100%', maxWidth: '950px', padding: '0 40px' }}>
             <h2 style={{
-              fontSize: '44px',
+              fontSize: '40px',
               fontWeight: 800,
-              color: '#fff',
+              color: '#0f172a',
               opacity: titleOpacity,
               transform: `translateY(${titleY}px)`,
-              margin: '0 0 30px 0',
+              margin: '0 0 10px 0',
             }}>
-              Role-Based Access Control
+              Role-Based Dashboard Control
             </h2>
+            <p style={{
+              fontSize: '18px',
+              color: '#64748b',
+              opacity: titleOpacity,
+              margin: '0 0 35px 0',
+              fontWeight: 500,
+            }}>
+              Separate views restrict raw data and operations to authorized personnel.
+            </p>
+
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              opacity: listOpacity,
-              transform: `scale(${cardScale})`,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '20px',
+              opacity: gridOpacity,
+              transform: `scale(${gridScale})`,
             }}>
               {roles.map((r) => (
                 <div key={r.name} style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '20px',
                   display: 'flex',
-                  alignItems: 'center',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '12px',
-                  padding: '12px 20px',
+                  gap: '15px',
                   textAlign: 'left',
-                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.02)',
                 }}>
                   <div style={{
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    color: '#3b82f6',
-                    width: '160px',
+                    fontSize: '28px',
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '12px',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #e2e8f0',
                     flexShrink: 0,
                   }}>
-                    {r.name}
+                    {r.icon}
                   </div>
-                  <div style={{
-                    fontSize: '16px',
-                    color: '#94a3b8',
-                  }}>
-                    {r.desc}
+                  <div>
+                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: r.color, margin: '0 0 6px 0' }}>
+                      {r.name} View
+                    </h3>
+                    <p style={{ fontSize: '14px', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                      {r.desc}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -191,33 +232,43 @@ export function TransitOpsVideo() {
     }
 
     if (currentSlide === 2) {
-      // SLIDE 3: AUTO RULES
+      // SLIDE 3: AUTOMATED BUSINESS LOGIC
       const titleOpacity = interpolate(slideFrame, [0, 15], [0, 1]);
       const titleY = spr(-30, 0, 0);
       const cardsOpacity = interpolate(slideFrame, [20, 35], [0, 1]);
       const cardsScale = spr(0.9, 1, 20);
 
       const rules = [
-        { title: 'Cargo Check', desc: 'Weight strictly validated against maximum vehicle cargo capacity limits.' },
-        { title: 'Compliance Check', desc: 'Suspended status or expired driving licenses block instant dispatching.' },
-        { title: 'Status Checking', desc: 'Retired or In Shop vehicles are hidden from dispatcher assignment dropdown.' },
-        { title: 'Odometer & Logs', desc: 'Trip completion updates odometer logs and calculates fuel usage automatically.' },
+        { label: 'Max Cargo validation', desc: 'Validates cargo payload weight against registered vehicle capability before dispatching.' },
+        { label: 'License Verification', desc: 'Driver cannot be assigned to trips if their driving license category is wrong or has expired.' },
+        { label: 'Status Flow Synchrony', desc: 'Dispatching or finishing trips automatically updates vehicle & driver availability states.' },
+        { label: 'Exclusivity locks', desc: 'Enforces that a vehicle or driver cannot be assigned to multiple dispatched trips concurrently.' },
       ];
 
       return (
         <div style={slideStyle}>
           <div style={glowBackground} />
-          <div style={{ zIndex: 1, width: '100%', maxWidth: '950px', padding: '0 40px' }}>
+          <div style={{ zIndex: 1, width: '100%', maxWidth: '920px', padding: '0 40px' }}>
             <h2 style={{
-              fontSize: '44px',
+              fontSize: '40px',
               fontWeight: 800,
-              color: '#fff',
+              color: '#0f172a',
               opacity: titleOpacity,
               transform: `translateY(${titleY}px)`,
-              margin: '0 0 35px 0',
+              margin: '0 0 10px 0',
             }}>
               Automated Business Rules
             </h2>
+            <p style={{
+              fontSize: '18px',
+              color: '#64748b',
+              opacity: titleOpacity,
+              margin: '0 0 40px 0',
+              fontWeight: 500,
+            }}>
+              Strict validation ensures fleet operations conform to policies.
+            </p>
+
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -226,18 +277,21 @@ export function TransitOpsVideo() {
               transform: `scale(${cardsScale})`,
             }}>
               {rules.map((r) => (
-                <div key={r.title} style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                <div key={r.label} style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '16px',
-                  padding: '20px',
+                  padding: '22px 24px',
                   textAlign: 'left',
-                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.02)',
                 }}>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981', marginBottom: '8px' }}>
-                    ✓ {r.title}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '18px' }}>✓</span>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+                      {r.label}
+                    </h3>
                   </div>
-                  <p style={{ fontSize: '15px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
                     {r.desc}
                   </p>
                 </div>
@@ -249,16 +303,16 @@ export function TransitOpsVideo() {
     }
 
     if (currentSlide >= 3) {
-      // SLIDE 4: MEET THE CREATORS
+      // SLIDE 4: CREATORS WITH REAL PHOTOS
       const titleOpacity = interpolate(slideFrame, [0, 15], [0, 1]);
       const titleY = spr(-30, 0, 0);
-      const profilesOpacity = interpolate(slideFrame, [20, 35], [0, 1]);
-      const profilesScale = spr(0.9, 1, 20);
+      const cardsOpacity = interpolate(slideFrame, [20, 35], [0, 1]);
+      const cardsScale = spr(0.9, 1, 20);
 
       const creators = [
-        { name: 'Krunal Rana', role: 'Full Stack Engineer', linkedin: 'https://www.linkedin.com/in/krunal-rana/' },
-        { name: 'Lagdhirsinh Vaghela', role: 'Solutions Architect', linkedin: 'https://www.linkedin.com/in/lagdhirsinh-vaghela-8512001b5/' },
-        { name: 'Dipen Patel', role: 'Security Analyst', linkedin: 'https://www.linkedin.com/in/dipen-patel-69520026a/' },
+        { name: 'Krunal Rana', role: 'Full Stack Engineer', img: '/images/krunal.png', url: 'https://www.linkedin.com/in/krunal-rana/' },
+        { name: 'Lagdhirsinh Vaghela', role: 'Solutions Architect', img: '/images/lagdhir.png', url: 'https://www.linkedin.com/in/lagdhirsinh-vaghela-8512001b5/' },
+        { name: 'Dipen Patel', role: 'Security Analyst', img: '/images/dipen.png', url: 'https://www.linkedin.com/in/dipen-patel-69520026a/' },
       ];
 
       return (
@@ -266,69 +320,83 @@ export function TransitOpsVideo() {
           <div style={glowBackground} />
           <div style={{ zIndex: 1, width: '100%', maxWidth: '900px', padding: '0 40px' }}>
             <h2 style={{
-              fontSize: '44px',
+              fontSize: '40px',
               fontWeight: 800,
-              color: '#fff',
+              color: '#0f172a',
               opacity: titleOpacity,
               transform: `translateY(${titleY}px)`,
-              margin: '0 0 10px 0',
+              margin: '0 0 6px 0',
             }}>
               Meet the Developers
             </h2>
-            <p style={{ fontSize: '18px', color: '#94a3b8', marginBottom: '35px', opacity: titleOpacity }}>
-              Connect with us on LinkedIn
+            <p style={{
+              fontSize: '18px',
+              color: '#64748b',
+              opacity: titleOpacity,
+              margin: '0 0 35px 0',
+              fontWeight: 500,
+            }}>
+              Connect with our development team on LinkedIn
             </p>
+
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '24px',
-              opacity: profilesOpacity,
-              transform: `scale(${profilesScale})`,
+              opacity: cardsOpacity,
+              transform: `scale(${cardsScale})`,
             }}>
               {creators.map((c) => (
                 <div key={c.name} style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '20px',
                   padding: '24px 20px',
-                  width: '260px',
+                  width: '240px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 8px 25px rgba(0,0,0,0.03)',
                 }}>
+                  {/* Photo Container */}
                   <div style={{
-                    width: '60px',
-                    height: '60px',
+                    width: '90px',
+                    height: '90px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    color: '#fff',
-                    marginBottom: '16px'
+                    overflow: 'hidden',
+                    border: '3px solid #2563eb',
+                    marginBottom: '16px',
+                    boxShadow: '0 4px 10px rgba(37, 99, 235, 0.15)',
+                    background: '#f1f5f9',
                   }}>
-                    {c.name.split(' ').map(p => p[0]).join('')}
+                    <img 
+                      src={c.img} 
+                      alt={c.name} 
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }} 
+                    />
                   </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: '0 0 4px 0' }}>
                     {c.name}
                   </h3>
-                  <span style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500, marginBottom: '14px' }}>
                     {c.role}
                   </span>
+                  
                   <a
-                    href={c.linkedin}
+                    href={c.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={buttonStyle}
                     onClick={(e) => {
-                      // Allow natural link clicks inside remotion browser rendering
                       e.stopPropagation();
                     }}
                   >
-                    LinkedIn
+                    LinkedIn Profile
                   </a>
                 </div>
               ))}
@@ -339,5 +407,13 @@ export function TransitOpsVideo() {
     }
   };
 
-  return <AbsoluteFill>{renderSlide()}</AbsoluteFill>;
+  return (
+    <AbsoluteFill>
+      <Audio 
+        src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" 
+        volume={0.12} 
+      />
+      {renderSlide()}
+    </AbsoluteFill>
+  );
 }
